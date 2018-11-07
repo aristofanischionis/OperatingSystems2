@@ -1,8 +1,8 @@
 #Got this from the official Website of Alexis Delis
 
-OBJS 	= main.o 
-SOURCE	= main.c CodeFiles/BinaryTreeofProcesses.c 
-HEADER  = HeaderFiles/BinaryTreeofProcesses.h
+OBJS 	= main.o BinaryTreeofProcesses.o API.o FileHandling.o InputManager.o Records.o
+SOURCE	= main.c CodeFiles/BinaryTreeofProcesses.c CodeFiles/API.c CodeFiles/FileHandling.c CodeFiles/InputManager.c CodeFiles/Records.c 
+HEADER  = HeaderFiles/BinaryTreeofProcesses.h HeaderFiles/API.h HeaderFiles/FileHandling.h HeaderFiles/InputManager.h HeaderFiles/Records.h
 OUT  	= myfind
 CC	= gcc
 FLAGS   = -g -c -Wall
@@ -19,21 +19,20 @@ main.o: main.c
 BinaryTreeofProcesses.o: CodeFiles/BinaryTreeofProcesses.c
 	$(CC) $(FLAGS) CodeFiles/BinaryTreeofProcesses.c
 
-# API.o: CodeFiles/API.c
-# 	$(CC) $(FLAGS) CodeFiles/API.c
+API.o: CodeFiles/API.c
+	$(CC) $(FLAGS) CodeFiles/API.c
 
 # Repository.o: CodeFiles/Repository.c
 # 	$(CC) $(FLAGS) CodeFiles/Repository.c
 
-# HashTable.o: Graph/HashTable.c
-# 	$(CC) $(FLAGS) Graph/HashTable.c
+FileHandling.o: CodeFiles/FileHandling.c
+	$(CC) $(FLAGS) CodeFiles/FileHandling.c
 
-# Node.o: Graph/Node.c
-# 	$(CC) $(FLAGS) Graph/Node.c
+InputManager.o: CodeFiles/InputManager.c
+	$(CC) $(FLAGS) CodeFiles/InputManager.c
 
-# Prime.o: Graph/Prime.c
-# 	$(CC) $(FLAGS) Graph/Prime.c
-
+Records.o: CodeFiles/Records.c
+	$(CC) $(FLAGS) CodeFiles/Records.c
 # clean house
 clean:
 	rm -f $(OBJS) $(OUT)

@@ -1,3 +1,2 @@
 
-int makeProcesses(int argc, char *argv[]);
-
+int makeProcesses(int h);
