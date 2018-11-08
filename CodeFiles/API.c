@@ -13,10 +13,10 @@ int InputDirector(int argc, char *argv[]){
     int sflag = 0;
     char *datafile;
     char *pattern;
-    datafile = (char *)malloc(40);
-    pattern = (char *)malloc(40);
-    strcpy(datafile, "");
-    strcpy(pattern, "");
+    // datafile = (char *)malloc(40);
+    // pattern = (char *)malloc(40);
+    // strcpy(datafile, "");
+    // strcpy(pattern, "");
     while( i<argc ){
         if( strcmp(argv[i],"-h") == 0 ){
             if( i < argc -1 ){
@@ -48,6 +48,7 @@ int InputDirector(int argc, char *argv[]){
                     return 1;
                 }
                 printf("Datafile is: %s\n", argv[i+1]);
+                datafile = (char *)malloc(strlen(argv[i+1]) * sizeof(char) + 1);
                 strcpy(datafile, argv[i+1]);
                 break;
             }
@@ -67,6 +68,7 @@ int InputDirector(int argc, char *argv[]){
                     return 1;
                 }
                 printf("Pattern is: %s\n", argv[i+1]);
+                pattern = (char *)malloc(strlen(argv[i+1]) * sizeof(char) + 1);
                 strcpy(pattern, argv[i+1]);
                 break;
             }
@@ -86,16 +88,15 @@ int InputDirector(int argc, char *argv[]){
         i++;
     }
     if(strcmp(datafile, "") != 0){
-        // InputManager(MyHash_Table, input);
+        ReadAllRecords(datafile);
     }
     else printf("datafile Name not given\n");
     if(strcmp(pattern, "") != 0){
         // InputManager(MyHash_Table, input);
     }
     else printf("pattern not given\n");
-
+    // the father process should make fork and call exec to execute the program for the splitter/merger and for the leaf nodes
 
     makeProcesses(h);
-    ReadAllRecords(datafile);
     return 0;
 }
