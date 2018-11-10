@@ -6,12 +6,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
+#include <time.h>
 #include "../HeaderFiles/Records.h"
-#include "../HeaderFiles/FileHandling.h"
 
-#define MSGSIZE 65
-
-char *fifo = "myfifo";
+char *fifo = "results";
+char *fifo2 = "statistics";
 
 int findSubstring(char *tobechecked, char *pattern){
     if(strstr(tobechecked, pattern)){
@@ -22,6 +21,7 @@ int findSubstring(char *tobechecked, char *pattern){
 }
 
 int main ( int argc , char * argv []) {
+    clock_t begin = clock();
     int i , nwrite ;
     char *datafile;
     int rangeBeg;
@@ -107,6 +107,20 @@ int main ( int argc , char * argv []) {
     // }
     
     //     fclose(fd);        
-
+    FILE *fp;  
+    if ( ( fp = fopen(fifo2,"w")) < 0){ 
+        perror("fifo2 open error" ); 
+        exit(1); 
+    }
+    
+    clock_t end = clock();
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("time elapsed %f", time_spent);
+    if (( nwrite = fwrite(&time_spent, sizeof(time_spent),1,fp) ) == -1){ 
+        perror(" Error in Writing in pipe\n" ); 
+        exit (2) ;
+    }
+    fclose(fp);
     exit(0);
+
 }
