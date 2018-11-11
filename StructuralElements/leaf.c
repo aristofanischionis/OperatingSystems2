@@ -32,7 +32,7 @@ int main ( int argc , char * argv []) {
     long lSize;
     int numOfrecords;
     char tobechecked[sizeof(rec)+1];
-    if ( argc != 5) { 
+    if ( argc < 5) { 
         printf( "filename, rangeBeg, numOfrecords, Pattern \n" ); 
         exit(1); 
     }

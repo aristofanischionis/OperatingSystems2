@@ -22,9 +22,6 @@ BinaryTreeofProcesses.o: CodeFiles/BinaryTreeofProcesses.c
 API.o: CodeFiles/API.c
 	$(CC) $(FLAGS) CodeFiles/API.c
 
-# Repository.o: CodeFiles/Repository.c
-# 	$(CC) $(FLAGS) CodeFiles/Repository.c
-
 FileHandling.o: CodeFiles/FileHandling.c
 	$(CC) $(FLAGS) CodeFiles/FileHandling.c
 
