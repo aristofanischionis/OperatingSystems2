@@ -1,38 +1,44 @@
 #Got this from the official Website of Alexis Delis
 
-OBJS 	= main.o BinaryTreeofProcesses.o API.o FileHandling.o InputManager.o Records.o
-SOURCE	= main.c CodeFiles/BinaryTreeofProcesses.c CodeFiles/API.c CodeFiles/FileHandling.c CodeFiles/InputManager.c CodeFiles/Records.c 
-HEADER  = HeaderFiles/BinaryTreeofProcesses.h HeaderFiles/API.h HeaderFiles/FileHandling.h HeaderFiles/InputManager.h HeaderFiles/Records.h
-OUT  	= myfind
+OBJS 	= main.o API.o Records.o
+SOURCE	= main.c CodeFiles/API.c CodeFiles/Records.c 
+HEADER  = HeaderFiles/API.h HeaderFiles/Records.h
+OUT  	= myfind leaf splitterMerger
 CC	= gcc
 FLAGS   = -g -c -Wall
 # -g option enables debugging mode 
 # -c flag generates object code for separate files
+# make the executables
 
-all: $(OBJS)
-	$(CC) -g $(OBJS) -o $(OUT)
+all: $(OUT)
+
+myfind : $(OBJS)
+	$(CC) -g $(OBJS) -o myfind
+
+leaf : StructuralElements/leaf.o
+	$(CC) -g StructuralElements/leaf.o -o StructuralElements/leaf
+
+splitterMerger : StructuralElements/splitterMerger.o
+	$(CC) -g StructuralElements/splitterMerger.o -o StructuralElements/splitterMerger
 
 # create/compile the individual files >>separately<< 
+splitterMerger.o : StructuralElements/splitterMerger.c
+	$(CC) $(FLAGS) StructuralElements/splitterMerger.c
+
+leaf.o : StructuralElements/leaf.c
+	$(CC) $(FLAGS) StructuralElements/leaf.c
+
 main.o: main.c
 	$(CC) $(FLAGS) main.c
 
-BinaryTreeofProcesses.o: CodeFiles/BinaryTreeofProcesses.c
-	$(CC) $(FLAGS) CodeFiles/BinaryTreeofProcesses.c
-
 API.o: CodeFiles/API.c
 	$(CC) $(FLAGS) CodeFiles/API.c
-
-FileHandling.o: CodeFiles/FileHandling.c
-	$(CC) $(FLAGS) CodeFiles/FileHandling.c
-
-InputManager.o: CodeFiles/InputManager.c
-	$(CC) $(FLAGS) CodeFiles/InputManager.c
 
 Records.o: CodeFiles/Records.c
 	$(CC) $(FLAGS) CodeFiles/Records.c
 # clean house
 clean:
-	rm -f $(OBJS) $(OUT)
+	rm -f $(OBJS) $(OUT) StructuralElements/leaf.o StructuralElements/splitterMerger.o StructuralElements/leaf StructuralElements/splitterMerger
 
 # do a bit of accounting
 count:

@@ -118,7 +118,7 @@ int main ( int argc , char * argv []) {
     char tobewritten[50];
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("PID %d needed %f\n",getpid(), time_spent);
-    sprintf(tobewritten, "PID %d needed %f\n", getpid(), time_spent );
+    sprintf(tobewritten, "Searcher PID %d needed %f\n", getpid(), time_spent );
     if (( nwrite = fwrite(tobewritten, sizeof(tobewritten),1,fp) ) == -1){ 
         perror(" Error in Writing in pipe\n" ); 
         exit (2) ;

@@ -5,14 +5,9 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <errno.h>
-#include "../HeaderFiles/BinaryTreeofProcesses.h"
 #include "../HeaderFiles/Records.h"
-#include "../HeaderFiles/InputManager.h"
-#include "../HeaderFiles/FileHandling.h"
 
-#define MSGSIZE 65
-
-char *fifo = "myfifo";
+// char *fifo = "myfifo";
 
 int InputDirector(int argc, char *argv[]){
     // Decode prompt ./myfind –h Height –d Datafile -p Pattern -s
@@ -21,10 +16,11 @@ int InputDirector(int argc, char *argv[]){
     int sflag = 0;
     char *datafile;
     char *pattern;
-    // datafile = (char *)malloc(40);
-    // pattern = (char *)malloc(40);
-    // strcpy(datafile, "");
-    // strcpy(pattern, "");
+    pid_t pid;
+    int status;
+    MyRecord rec;
+    long lSize;
+    int numOfrecords;
     while( i<argc ){
         if( strcmp(argv[i],"-h") == 0 ){
             if( i < argc -1 ){
@@ -95,45 +91,50 @@ int InputDirector(int argc, char *argv[]){
         }
         i++;
     }
-    // if(strcmp(datafile, "") != 0){
-        // ReadAllRecords(datafile);
-    // }
-    // else printf("datafile Name not given\n");
-    // if(strcmp(pattern, "") != 0){
-    //     // InputManager(MyHash_Table, input);
-    // }
-    // else printf("pattern not given\n");
-    // // the father process should make fork and call exec to execute the program for the splitter/merger and for the leaf nodes
-
-    // makeProcesses(h);
-
-    
-    return 0;
-}
-
-
-int makeNamedPipe(){
-    int fd , i , nwrite ;
-    char msgbuf[ MSGSIZE +1];
-    // make fifo
-    if ( mkfifo( fifo , 0666) == -1 ){
-        if ( errno != EEXIST ) {
-            perror( " receiver : mkfifo " );
-            exit(6) ;
+    //root node
+    char *paramsSM[argc];
+        
+        paramsSM[0] = (char *)malloc(5); strcpy(paramsSM[0], "./splitterMerger");
+        paramsSM[1] = (char *)malloc(strlen(datafile)+1); strcpy(paramsSM[1], datafile);
+        paramsSM[2] = (char *)malloc(2);
+        paramsSM[3] = (char *)malloc(12);
+        paramsSM[4] = (char *)malloc(strlen(pattern)+1); strcpy(paramsSM[4], pattern);
+        paramsSM[5] = (char *)malloc(12); sprintf(paramsSM[5], "%d", h );
+        if(sflag){
+            paramsSM[6] = (char *)malloc(3); strcpy(paramsSM[6], "-s");
+            paramsSM[7] = NULL;
         }
-    }
-    // open fifo
-    if ( ( fd = open( fifo , O_RDWR )) < 0) {
-        perror(" fifo open problem ");
-        exit(3) ;
-    }
-    // ready to read from fifo
-    for (;;) {
-        if ( read(fd , msgbuf , MSGSIZE +1) < 0) {
-            perror( " problem in reading ") ;
-            exit(5) ;
+        else paramsSM[6] = NULL;
+
+        if ( ( pid = fork() ) == -1) { perror(" fork "); exit(1) ; }
+        if ( pid !=0 ) { // parent
+            printf (" I am the parent process % d\n" , getpid() ) ;
+            if( wait(&status) != pid ){ // check if child returns
+                perror( " wait "); exit (1) ; }
+            printf(" Child terminated with exit code %d\n" , status >> 8) ;
         }
-        printf(" \nMessage Received : %s\n" , msgbuf );
-        fflush( stdout );
-    }
+        else { //child
+            paramsSM[2] = strcpy(paramsSM[2], "0");
+            FILE *fpb;
+            fpb = fopen (argv[1],"rb");
+            if (fpb==NULL) {
+      	        printf("Cannot open binary file\n");
+      	        return 1;
+   	        }
+            // check number of records
+            fseek (fpb, 0, SEEK_END);
+            lSize = ftell(fpb);
+            numOfrecords = (int)lSize/sizeof(rec);
+
+            paramsSM[2] = strcpy(paramsSM[2], "0");
+            sprintf(paramsSM[3], "%d", numOfrecords);
+
+            printf (" I am the child process %d " , getpid() );
+            printf (" and will be replaced with ’ splitterMerger ’\n" );
+            execvp ("./splitterMerger" , paramsSM );
+            exit (1) ;
+        }
+        
+        exit(0);
+
 }
