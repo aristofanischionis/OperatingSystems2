@@ -37,7 +37,7 @@ int main ( int argc , char * argv []) {
         printf( "filename, rangeBeg, numOfrecords, Pattern \n" ); 
         exit(1); 
     }
-    if ( ( fd = fopen( fifo , "ab" )) < 0){ 
+    if ( ( fd = fopen( fifo , "wb" )) < 0){ 
         perror("fifo open error" ); 
         exit(1); 
     }
@@ -109,7 +109,7 @@ int main ( int argc , char * argv []) {
     
     //     fclose(fd);        
     FILE *fp;  
-    if ( ( fp = fopen(fifo2,"a")) < 0){ 
+    if ( ( fp = fopen(fifo2,"w")) < 0){ 
         perror("fifo2 open error" ); 
         exit(1); 
     }
