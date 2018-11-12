@@ -7,6 +7,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#include <poll.h>
 #include "../HeaderFiles/Records.h"
 
 char *fifo = "results";
@@ -36,7 +37,7 @@ int main ( int argc , char * argv []) {
         printf( "filename, rangeBeg, numOfrecords, Pattern \n" ); 
         exit(1); 
     }
-    if ( ( fd = fopen( fifo , "wb" )) < 0){ 
+    if ( ( fd = fopen( fifo , "ab" )) < 0){ 
         perror("fifo open error" ); 
         exit(1); 
     }
@@ -108,15 +109,17 @@ int main ( int argc , char * argv []) {
     
     //     fclose(fd);        
     FILE *fp;  
-    if ( ( fp = fopen(fifo2,"w")) < 0){ 
+    if ( ( fp = fopen(fifo2,"a")) < 0){ 
         perror("fifo2 open error" ); 
         exit(1); 
     }
     
     clock_t end = clock();
+    char tobewritten[50];
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    printf("time elapsed %f", time_spent);
-    if (( nwrite = fwrite(&time_spent, sizeof(time_spent),1,fp) ) == -1){ 
+    printf("PID %d needed %f\n",getpid(), time_spent);
+    sprintf(tobewritten, "PID %d needed %f\n", getpid(), time_spent );
+    if (( nwrite = fwrite(tobewritten, sizeof(tobewritten),1,fp) ) == -1){ 
         perror(" Error in Writing in pipe\n" ); 
         exit (2) ;
     }
