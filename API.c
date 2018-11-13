@@ -1,11 +1,13 @@
-#include <stdio.h>
-#include <stdlib.h> 
-#include <string.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <unistd.h>
 #include <fcntl.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <errno.h>
-#include "../HeaderFiles/Records.h"
+#include <time.h>
+#include "./HeaderFiles/Records.h"
 
 // char *fifo = "myfifo";
 
@@ -116,7 +118,7 @@ int InputDirector(int argc, char *argv[]){
         else { //child
             paramsSM[2] = strcpy(paramsSM[2], "0");
             FILE *fpb;
-            fpb = fopen (argv[1],"rb");
+            fpb = fopen (datafile,"rb");
             if (fpb==NULL) {
       	        printf("Cannot open binary file\n");
       	        return 1;

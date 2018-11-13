@@ -7,7 +7,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
-#include "../HeaderFiles/Records.h"
+#include "./HeaderFiles/Records.h"
 
 #define MSGSIZE 65
 
@@ -15,14 +15,14 @@ char *fifo = "results";
 char *fifo2 = "statistics";
 
 int main ( int argc , char * argv []) {
-    int fd , i , nwrite, num1, num2;
+    int num1, num2;
     char *datafile;
     int rangeBeg;
     char *pattern;
     int numOfrecords;
     int h;
     int sflag = 0;
-    pid_t pid;
+    pid_t pid1, pid2;
     int  status;
     char *params[6];
     if( argc < 6) { 
@@ -52,14 +52,14 @@ int main ( int argc , char * argv []) {
         num1 = numOfrecords / 2;
         num2 = numOfrecords - num1;
         // to handle the case of odd numbersof records
-        if ( ( pid = fork() ) == -1) { perror(" fork "); exit(1) ; }
-        if ( pid !=0 ) { // parent
+        if ( ( pid1 = fork() ) == -1) { perror(" fork "); exit(1) ; }
+        if ( pid1 !=0 ) { // parent
             printf (" I am the parent process % d\n" , getpid() ) ;
 
-            if ( ( pid = fork() ) == -1) { perror(" fork "); exit(1) ; }
-            if ( pid !=0 ) { // parent
+            if ( ( pid2 = fork() ) == -1) { perror(" fork "); exit(1) ; }
+            if ( pid2 !=0 ) { // parent
                 printf(" I am the parent process % d\n" , getpid() ) ;
-                if ( wait(&status) != pid ){ // check if child returns
+                if ( wait(&status) != pid2 ){ // check if child returns
                     perror( " wait "); exit(1) ; }
                 printf (" Child terminated with exit code %d\n" , status >> 8) ;
             }
@@ -78,7 +78,7 @@ int main ( int argc , char * argv []) {
                 exit (1) ;
             }
 
-            if( wait(&status) != pid ){ // check if child returns
+            if( wait(&status) != pid1 ){ // check if child returns
                 perror( " wait "); exit (1) ; }
             printf(" Child terminated with exit code %d\n" , status >> 8) ;
         }
@@ -118,14 +118,14 @@ int main ( int argc , char * argv []) {
         num1 = numOfrecords / 2;
         num2 = numOfrecords - num1;
         // to handle the case of odd numbersof records
-        if ( ( pid = fork() ) == -1) { perror(" fork "); exit(1) ; }
-        if ( pid !=0 ) { // parent
+        if ( ( pid1 = fork() ) == -1) { perror(" fork "); exit(1) ; }
+        if ( pid1 !=0 ) { // parent
             printf (" I am the parent process % d\n" , getpid() ) ;
 
-            if ( ( pid = fork() ) == -1) { perror(" fork "); exit(1) ; }
-            if ( pid !=0 ) { // parent
+            if ( ( pid2 = fork() ) == -1) { perror(" fork "); exit(1) ; }
+            if ( pid2 !=0 ) { // parent
                 printf(" I am the parent process % d\n" , getpid() ) ;
-                if ( wait(&status) != pid ){ // check if child returns
+                if ( wait(&status) != pid2 ){ // check if child returns
                     perror( " wait "); exit(1) ; }
                 printf (" Child terminated with exit code %d\n" , status >> 8) ;
             }
@@ -144,7 +144,7 @@ int main ( int argc , char * argv []) {
                 exit (1) ;
             }
 
-            if( wait(&status) != pid ){ // check if child returns
+            if( wait(&status) != pid1 ){ // check if child returns
                 perror( " wait "); exit (1) ; }
             printf(" Child terminated with exit code %d\n" , status >> 8) ;
         }

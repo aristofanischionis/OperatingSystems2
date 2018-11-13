@@ -7,15 +7,14 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
-#include <poll.h>
-#include "../HeaderFiles/Records.h"
+#include "./HeaderFiles/Records.h"
 
 char *fifo = "results";
 char *fifo2 = "statistics";
 
 int findSubstring(char *tobechecked, char *pattern){
     if(strstr(tobechecked, pattern)){
-        printf("I found the record: %s\n", tobechecked);
+        // printf("My pid is %d and I found the record: %s\n", getpid(), tobechecked);
         return 1;
     }
     else return 0;
@@ -30,7 +29,6 @@ int main ( int argc , char * argv []) {
     FILE *fpb, *fd;
     MyRecord rec;
     MyRecord rec2 ;
-    long lSize;
     int numOfrecords;
     char tobechecked[sizeof(rec)+1];
     if ( argc < 5) { 
@@ -48,7 +46,7 @@ int main ( int argc , char * argv []) {
     numOfrecords = atoi(argv[3]);
     pattern = (char *)malloc(strlen(argv[4]) * sizeof(char) + 1);
     strcpy(pattern, argv[4]);
-
+    printf("my pid is %d and my range is %d - %d\n", getpid(), rangeBeg, rangeBeg + numOfrecords);
     // read records from file
     fpb = fopen (datafile,"rb");
     if (fpb==NULL) {
