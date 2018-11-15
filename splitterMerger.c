@@ -19,7 +19,7 @@ int main ( int argc , char * argv []) {
     int sflag = 0;
     pid_t pid1, pid2;
     int  status;
-    char *params[8];
+    char *params[7];
     if( argc < 6) { 
         printf( "filename, rangeBeg, numOfrecords, Pattern, height \n" ); 
         exit(1); 
@@ -44,26 +44,19 @@ int main ( int argc , char * argv []) {
         params[3] = (char *)malloc(12);
         params[4]=(char *)malloc(strlen(pattern)+1); strcpy(params[4], pattern);
         params[5] = (char *)malloc(20);
-        params[6] = (char *)malloc(25);
-        params[7] = NULL;
+        params[6] = NULL;
         num1 = numOfrecords / 2;
         num2 = numOfrecords - num1;
         // to handle the case of odd numbersof records
         char KidResults1[20];
-        char KidStatistics1[25];
         char KidResults2[20];
-        char KidStatistics2[25];
         // giving name to each fifo
         sprintf(KidResults1, "%s%d","KidResults1_" ,getpid());
-        sprintf(KidStatistics1, "%s%d","KidStatistics1_" ,getpid());
         sprintf(KidResults2, "%s%d","KidResults2_" ,getpid());
-        sprintf(KidStatistics2, "%s%d","KidStatistics2_" ,getpid());
         //
         // making the fifos for my kids
-        if( mkfifo(KidResults1, 0666) < 0){ perror( " Error creating the named pipe " ); exit(1); }
-        if( mkfifo(KidStatistics1, 0666) < 0){ perror( " Error creating the named pipe " ); exit(1); }
-        if( mkfifo(KidResults2, 0666) < 0){ perror( " Error creating the named pipe " ); exit(1); }
-        if( mkfifo(KidStatistics2, 0666) < 0){ perror( " Error creating the named pipe " ); exit(1); }
+        if( mkfifo(KidResults1, 0666) == -1){ perror( " Error creating the named pipe " ); exit(1); }
+        if( mkfifo(KidResults2, 0666) == -1){ perror( " Error creating the named pipe " ); exit(1); }
         // forking the kids
         if ( ( pid1 = fork() ) == -1) { perror(" fork "); exit(1) ; }
         if ( pid1 !=0 ) { // parent
@@ -76,31 +69,29 @@ int main ( int argc , char * argv []) {
                 // printf (" Child terminated with exit code %d\n" , status >> 8) ;
                 // reading from fifos 2
                 printf("I am %s and now i'm gonna read from my pipe\n", KidResults2);
-                int fd;
+                int fd, nread = 0;
                 MyRecord rec;
-                if ( ( fd = open( KidResults2 ,  O_RDONLY  )) < 0){ 
+                if ( ( fd = open( KidResults2 ,  O_RDONLY  )) == -1){ 
                     perror("fifo open error" ); 
                     exit(1); 
                 }
-                    read(fd, &rec, sizeof(rec));
+                
+                while((nread = read(fd, &rec, sizeof(rec)) > 0)){
+                    if(rec.AM == -1){
+                        printf("I just read end");
+                        break;
+                    }
+
                     printf("%ld %s %s  %s %d %s %s %-9.2f\n", \
                         rec.AM, rec.LastName, rec.FirstName, \
                         rec.Street, rec.HouseID, rec.City, rec.postcode, \
                         rec.salary);
 
+                }
+                char stat2[12];
+                nread = read(fd, stat2, sizeof(stat2));
+                printf("time for kid 2 is %s\n", stat2);
                 //
-                int fd2;
-            char *stat2 = (char*)malloc(35);
-            if((fd2 = open(KidStatistics2, O_RDONLY)) < 0){
-                perror("fifo open error" ); 
-                exit(1); 
-            }
-            if(read(fd2, stat2, sizeof(stat2)) < 0){
-                perror("fifo reading error" ); 
-                exit(1); 
-            }
-            printf("2I just read %s \n", stat2);
-                
             //
             }
             else { //child 2
@@ -112,7 +103,6 @@ int main ( int argc , char * argv []) {
                     sprintf(params[3], "%d", num2);
                 }
                 strcpy(params[5], KidResults2);
-                strcpy(params[6], KidStatistics2);
                 printf (" I am the child process %d " , getpid() );
                 printf (" and will be replaced with ’ leaf ’\n" );
                 execvp ("./leaf" , params );
@@ -124,39 +114,29 @@ int main ( int argc , char * argv []) {
             // printf(" Child terminated with exit code %d\n" , status >> 8) ;
             // reading from fifos 1
             printf("I am %s and now i'm gonna read from my pipe\n", KidResults1);
-            int fd;
+            int fd, nread = 0;
             MyRecord rec;
-            if ( ( fd = open( KidResults1 ,  O_RDONLY  )) < 0){ 
-                perror("fifo open error" ); 
-                exit(1); 
-            }
-            while(1){
-                if(read(fd, &rec, sizeof(rec)) < 0){
-                    perror("fifo reading error" ); 
-                    exit(1); 
-                }
-                printf("%ld %s %s  %s %d %s %s %-9.2f\n", \
-                    rec.AM, rec.LastName, rec.FirstName, \
-                    rec.Street, rec.HouseID, rec.City, rec.postcode, \
-                    rec.salary);
-            }
-            
-                
-            int fd1;
-            char *stat = (char*)malloc(35);
-            if((fd1 = open(KidStatistics1, O_RDONLY)) < 0){
-                perror("fifo open error" ); 
-                exit(1); 
-            }
-            if(read(fd1, stat, sizeof(stat)) < 0){
-                perror("fifo reading error" ); 
-                exit(1); 
-            }
-            printf("1I just read %s \n", stat);
-            // write in parents results and delete file
-            // read statistics add mine and write them
 
-            //
+            if ( ( fd = open( KidResults1 ,  O_RDONLY  )) == -1){ 
+                perror("fifo open error" ); 
+                exit(1); 
+            }
+            while((nread = read(fd, &rec, sizeof(rec)) > 0)){
+                    if(rec.AM == -1){
+                        printf("I just read end");
+                        break;
+                    }
+
+                    printf("%ld %s %s  %s %d %s %s %-9.2f\n", \
+                        rec.AM, rec.LastName, rec.FirstName, \
+                        rec.Street, rec.HouseID, rec.City, rec.postcode, \
+                        rec.salary);
+
+                }
+            char stat1[12];
+                nread = read(fd, stat1, sizeof(stat1));
+                printf("time for kid 1 is %s\n", stat1);
+
         }
         else { //child 1
             if(sflag){
@@ -168,7 +148,6 @@ int main ( int argc , char * argv []) {
 
             }
             strcpy(params[5], KidResults1);
-            strcpy(params[6], KidStatistics1);
             printf (" I am the child process %d " , getpid() );
             printf (" and will be replaced with ’ leaf ’\n" );
             execvp ("./leaf" , params );

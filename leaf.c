@@ -19,7 +19,7 @@ int findSubstring(char *tobechecked, char *pattern){
 
 int main ( int argc , char * argv []) {
     clock_t begin = clock();
-    int i , nwrite ;
+    int i;
     char *datafile;
     int rangeBeg;
     char *pattern;
@@ -29,8 +29,8 @@ int main ( int argc , char * argv []) {
     MyRecord rec2 ;
     int numOfrecords;
     char tobechecked[sizeof(rec)+1];
-    if ( argc != 7) { 
-        printf( "filename, rangeBeg, numOfrecords, Pattern, results, statistics\n" ); 
+    if ( argc != 6) { 
+        printf( "filename, rangeBeg, numOfrecords, Pattern, results\n" ); 
         exit(1); 
     }
     datafile = (char *)malloc(strlen(argv[1]) + 1);
@@ -39,14 +39,13 @@ int main ( int argc , char * argv []) {
     numOfrecords = atoi(argv[3]);
     pattern = (char *)malloc(strlen(argv[4]) + 1);
     strcpy(pattern, argv[4]);
-    // taking fifo names for results and statistics
+    // taking fifo name for results and statistics
     char *fifo = (char *)malloc(strlen(argv[5]) + 1);
     strcpy(fifo, argv[5]);
-    char *fifo2 = (char *)malloc(strlen(argv[6]) + 1);
-    strcpy(fifo2, argv[6]);
+    
     // opening results fifo
 
-    if ( ( fd = open( fifo , O_WRONLY )) < 0){ 
+    if ( ( fd = open( fifo , O_WRONLY )) == -1){ 
         perror("fifo open error" ); 
         exit(1); 
     }
@@ -81,26 +80,26 @@ int main ( int argc , char * argv []) {
             strncpy(rec2.City,rec.City,20);
             strncpy(rec2.postcode,rec.postcode,6);
             rec2.salary = rec.salary;
-            if (write(fd, &rec2, sizeof(rec2)) < 0){ 
+            if (write(fd, &rec2, sizeof(rec2)) == -1){ 
                 perror(" Error in Writing in pipe\n" ); 
-                exit (2) ;
+                exit(2) ;
             }
-        } 
+        }
     }
     fclose(fpb);
 
-    int fp;  
-    if ( ( fp = open(fifo2, O_WRONLY)) < 0){ 
-        perror("fifo2 open error" ); 
-        exit(1); 
-    }
-    
     clock_t end = clock();
+    rec2.AM = -1;
+    //
+    if (write(fd, &rec2, sizeof(rec2)) == -1){  // to specify that statistics are coming
+        perror(" Error in Writing in pipe\n" ); 
+        exit (2) ;
+    }
     char tobewritten[50];
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("PID %d needed %f\n",getpid(), time_spent);
-    sprintf(tobewritten, "Searcher PID %d needed %f\n", getpid(), time_spent );
-    if ((write(fp, tobewritten, sizeof(tobewritten)) ) < 0){ 
+    sprintf(tobewritten, "%f", time_spent );
+    if ((write(fd, tobewritten, sizeof(tobewritten)) ) == -1){ 
         perror(" Error at Writing in pipe\n" ); 
         exit (2) ;
     }
