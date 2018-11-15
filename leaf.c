@@ -18,7 +18,6 @@ int findSubstring(char *tobechecked, char *pattern){
 }
 
 int main ( int argc , char * argv []) {
-    clock_t begin = clock();
     int i;
     char *datafile;
     int rangeBeg;
@@ -55,6 +54,8 @@ int main ( int argc , char * argv []) {
       	printf("Cannot open binary file\n");
       	return 1;
    	}
+    //place timer
+    clock_t begin = clock();
     // place cursor in the rangeBeg record
     fseek (fpb , (long)rangeBeg*sizeof(rec) , SEEK_SET);
 
@@ -95,10 +96,10 @@ int main ( int argc , char * argv []) {
         perror(" Error in Writing in pipe\n" ); 
         exit (2) ;
     }
-    char tobewritten[50];
+    char tobewritten[25];
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("PID %d needed %f\n",getpid(), time_spent);
-    sprintf(tobewritten, "%f", time_spent );
+    sprintf(tobewritten, "Searcher %f", time_spent );
     if ((write(fd, tobewritten, sizeof(tobewritten)) ) == -1){ 
         perror(" Error at Writing in pipe\n" ); 
         exit (2) ;
