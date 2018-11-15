@@ -9,9 +9,6 @@
 #include <time.h>
 #include "./HeaderFiles/Records.h"
 
-char *fifo = "results";
-char *fifo2 = "statistics";
-
 int findSubstring(char *tobechecked, char *pattern){
     if(strstr(tobechecked, pattern)){
         // printf("My pid is %d and I found the record: %s\n", getpid(), tobechecked);
@@ -26,27 +23,32 @@ int main ( int argc , char * argv []) {
     char *datafile;
     int rangeBeg;
     char *pattern;
-    FILE *fpb, *fd;
+    FILE *fpb;
+    int fd;
     MyRecord rec;
     MyRecord rec2 ;
     int numOfrecords;
     char tobechecked[sizeof(rec)+1];
-    if ( argc < 5) { 
-        printf( "filename, rangeBeg, numOfrecords, Pattern \n" ); 
+    if ( argc != 7) { 
+        printf( "filename, rangeBeg, numOfrecords, Pattern, results, statistics\n" ); 
         exit(1); 
     }
-    if ( ( fd = fopen( fifo , "wb" )) < 0){ 
-        perror("fifo open error" ); 
-        exit(1); 
-    }
-
-    datafile = (char *)malloc(strlen(argv[1]) * sizeof(char) + 1);
+    datafile = (char *)malloc(strlen(argv[1]) + 1);
     strcpy(datafile, argv[1]);
     rangeBeg = atoi(argv[2]);
     numOfrecords = atoi(argv[3]);
-    pattern = (char *)malloc(strlen(argv[4]) * sizeof(char) + 1);
+    pattern = (char *)malloc(strlen(argv[4]) + 1);
     strcpy(pattern, argv[4]);
-    printf("my pid is %d and my range is %d - %d\n", getpid(), rangeBeg, rangeBeg + numOfrecords);
+    // taking fifo names for resutls and statistics
+    char *fifo = (char *)malloc(strlen(argv[5]) + 1);
+    strcpy(fifo, argv[5]);
+    char *fifo2 = (char *)malloc(strlen(argv[6]) + 1);
+    strcpy(fifo2, argv[6]);
+    // opening results fifo
+    if ( ( fd = open( fifo , O_WRONLY )) < 0){ 
+        perror("fifo open error" ); 
+        exit(1); 
+    }
     // read records from file
     fpb = fopen (datafile,"rb");
     if (fpb==NULL) {
@@ -78,14 +80,14 @@ int main ( int argc , char * argv []) {
             strncpy(rec2.City,rec.City,20);
             strncpy(rec2.postcode,rec.postcode,6);
             rec2.salary = rec.salary;
-            if (( nwrite = fwrite(&rec2, sizeof(rec2),1,fd) ) == -1){ 
+            if (( nwrite = write(fd, &rec2, sizeof(rec2)) ) == -1){ 
                 perror(" Error in Writing in pipe\n" ); 
                 exit (2) ;
             }
         } 
     }
 
-    fclose(fd);
+    // fclose(fd);
     fclose(fpb);
 
 // to read from pipe

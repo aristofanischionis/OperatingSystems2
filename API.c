@@ -34,6 +34,7 @@ int InputDirector(int argc, char *argv[]){
                 h = atoi(argv[i+1]);
                 if(h > 5 || h < 1){
                     printf("Acceptable heights are from 1-5, you gave %d, I will put the default h=1\n",h);
+                    return 1;
                     h=1;
                 }
                 break;
