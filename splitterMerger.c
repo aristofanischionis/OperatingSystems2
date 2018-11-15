@@ -87,7 +87,20 @@ int main ( int argc , char * argv []) {
                         rec.AM, rec.LastName, rec.FirstName, \
                         rec.Street, rec.HouseID, rec.City, rec.postcode, \
                         rec.salary);
-                    
+
+                //
+                int fd2;
+            char *stat2 = (char*)malloc(35);
+            if((fd2 = open(KidStatistics2, O_RDONLY)) < 0){
+                perror("fifo open error" ); 
+                exit(1); 
+            }
+            if(read(fd2, stat2, sizeof(stat2)) < 0){
+                perror("fifo reading error" ); 
+                exit(1); 
+            }
+            printf("2I just read %s \n", stat2);
+                
             //
             }
             else { //child 2
@@ -117,12 +130,29 @@ int main ( int argc , char * argv []) {
                 perror("fifo open error" ); 
                 exit(1); 
             }
-                read(fd, &rec, sizeof(rec));
+            while(1){
+                if(read(fd, &rec, sizeof(rec)) < 0){
+                    perror("fifo reading error" ); 
+                    exit(1); 
+                }
                 printf("%ld %s %s  %s %d %s %s %-9.2f\n", \
                     rec.AM, rec.LastName, rec.FirstName, \
                     rec.Street, rec.HouseID, rec.City, rec.postcode, \
                     rec.salary);
+            }
+            
                 
+            int fd1;
+            char *stat = (char*)malloc(35);
+            if((fd1 = open(KidStatistics1, O_RDONLY)) < 0){
+                perror("fifo open error" ); 
+                exit(1); 
+            }
+            if(read(fd1, stat, sizeof(stat)) < 0){
+                perror("fifo reading error" ); 
+                exit(1); 
+            }
+            printf("1I just read %s \n", stat);
             // write in parents results and delete file
             // read statistics add mine and write them
 
