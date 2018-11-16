@@ -43,7 +43,6 @@ int main ( int argc , char * argv []) {
     strcpy(fifo, argv[5]);
     
     // opening results fifo
-
     if ( ( fd = open( fifo , O_WRONLY )) == -1){ 
         perror("fifo open error" ); 
         exit(1); 
@@ -58,7 +57,6 @@ int main ( int argc , char * argv []) {
     clock_t begin = clock();
     // place cursor in the rangeBeg record
     fseek (fpb , (long)rangeBeg*sizeof(rec) , SEEK_SET);
-
     for (i=0; i<numOfrecords ; i++) {
         fread(&rec, sizeof(rec), 1, fpb);
         // place the record in a string to check it for substrings
@@ -67,7 +65,7 @@ int main ( int argc , char * argv []) {
         rec.Street, rec.HouseID, rec.City, rec.postcode, \
         rec.salary);
         if( n == 0) {
-            printf("snprintf read 0 chars");
+            printf("snprintf read 0 chars\n");
             exit(1);
         }
         //  check if pattern exists in file
@@ -98,7 +96,7 @@ int main ( int argc , char * argv []) {
     }
     char tobewritten[25];
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    printf("PID %d needed %f\n",getpid(), time_spent);
+    // printf("PID %d needed ----------->%f\n",getpid(), time_spent);
     sprintf(tobewritten, "Searcher %f", time_spent );
     if ((write(fd, tobewritten, sizeof(tobewritten)) ) == -1){ 
         perror(" Error at Writing in pipe\n" ); 

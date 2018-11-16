@@ -7,6 +7,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#include <poll.h>
 #include "./HeaderFiles/Records.h"
 
 // char *fifo = "myfifo";
@@ -22,7 +23,7 @@ int InputDirector(int argc, char *argv[])
     pid_t pid;
     MyRecord rec;
     long lSize;
-    int numOfrecords, status;
+    int numOfrecords;
     while (i < argc)
     {
         if (strcmp(argv[i], "-h") == 0)
@@ -154,37 +155,58 @@ int InputDirector(int argc, char *argv[])
         printf(" I am the parent process % d\n", getpid());
         // reading the final results
         // if ((wait(&status) != pid )) { perror("wait"); exit(1);}
+        
         printf("I am %d and now i'm gonna read from my pipe\n", getpid());
-        int fd, nread = 0;
+        int fd, rc, nread = 0;
+        struct pollfd fdarray[1];
+        // while ((pid = waitpid(-1, &status, 0)) != -1)
+        // {
+        //     printf("Process %d terminated\n", pid);
+        // }
         if ((fd = open(paramsSM[6], O_RDONLY)) == -1)
         {
             perror("fifo open error");
             exit(1);
         }
-
         while ((nread = read(fd, &rec, sizeof(rec)) > 0))
         {
-            printf("hello form APII\n");
-            if (rec.AM == -1)
+            /* initialize poll parameters */
+            fdarray[0].fd = fd;
+            fdarray[0].events = POLLIN;
+            /* wait for incomign data or poll timeout */
+            rc = poll(fdarray, 1, 300);
+            if (rc == 0)
             {
-                printf("----------->I just read end");
+                printf(" Poll timed - out --->>>>>>>>>>.\n ");
                 break;
             }
-            printf("hello form APII2\n");
-            printf("%ld %s %s  %s %d %s %s %-9.2f\n",
-                   rec.AM, rec.LastName, rec.FirstName,
-                   rec.Street, rec.HouseID, rec.City, rec.postcode,
-                   rec.salary);
-            // // write this result in my dad's pipe
-            // if (write(myfd, &rec, sizeof(rec)) == -1)
-            // {
-            //     perror(" Error in Writing in pipe\n");
-            //     exit(2);
-            // }
+            else if ((rc == 1) && (fdarray[0].revents == POLLIN))
+            {
+                if (fdarray[0].fd == fd)
+                {
+                    if (rec.AM == -1)
+                    {
+                        printf("----------->I just read end");
+                        break;
+                    }
+                    printf("%ld %s %s  %s %d %s %s %-9.2f\n",
+                           rec.AM, rec.LastName, rec.FirstName,
+                           rec.Street, rec.HouseID, rec.City, rec.postcode,
+                           rec.salary);
+                    // // write this result in my dad's pipe
+                    // if (write(myfd, &rec, sizeof(rec)) == -1)
+                    // {
+                    //     perror(" Error in Writing in pipe\n");
+                    //     exit(2);
+                    // }
+                }
+            }
         }
-        
-        if (remove(paramsSM[6]) == 0) printf("Deleted successfully"); 
-        else printf("Unable to delete the file"); 
+
+        if (remove(paramsSM[6]) == 0)
+            printf("Deleted successfully");
+        else
+            printf("Unable to delete the file");
     }
     else
     { //child
@@ -207,7 +229,6 @@ int InputDirector(int argc, char *argv[])
         printf(" I am the child process %d ", getpid());
         printf(" and will be replaced with ’ splitterMerger ’\n");
         execvp("./splitterMerger", paramsSM);
-        exit(1);
     }
 
     exit(0);
