@@ -20,10 +20,9 @@ int InputDirector(int argc, char *argv[])
     char *datafile;
     char *pattern;
     pid_t pid;
-    int status;
     MyRecord rec;
     long lSize;
-    int numOfrecords;
+    int numOfrecords, status;
     while (i < argc)
     {
         if (strcmp(argv[i], "-h") == 0)
@@ -138,7 +137,7 @@ int InputDirector(int argc, char *argv[])
     if (sflag)
     {
         paramsSM[7] = (char *)malloc(3);
-        strcpy(paramsSM[6], "-s");
+        strcpy(paramsSM[7], "-s");
         paramsSM[8] = NULL;
     }
     else
@@ -153,12 +152,39 @@ int InputDirector(int argc, char *argv[])
     if (pid != 0)
     { // parent
         printf(" I am the parent process % d\n", getpid());
-        if (wait(&status) != pid)
-        { // check if child returns
-            perror(" wait ");
+        // reading the final results
+        // if ((wait(&status) != pid )) { perror("wait"); exit(1);}
+        printf("I am %d and now i'm gonna read from my pipe\n", getpid());
+        int fd, nread = 0;
+        if ((fd = open(paramsSM[6], O_RDONLY)) == -1)
+        {
+            perror("fifo open error");
             exit(1);
         }
-        printf(" Child terminated with exit code %d\n", status >> 8);
+
+        while ((nread = read(fd, &rec, sizeof(rec)) > 0))
+        {
+            printf("hello form APII\n");
+            if (rec.AM == -1)
+            {
+                printf("----------->I just read end");
+                break;
+            }
+            printf("hello form APII2\n");
+            printf("%ld %s %s  %s %d %s %s %-9.2f\n",
+                   rec.AM, rec.LastName, rec.FirstName,
+                   rec.Street, rec.HouseID, rec.City, rec.postcode,
+                   rec.salary);
+            // // write this result in my dad's pipe
+            // if (write(myfd, &rec, sizeof(rec)) == -1)
+            // {
+            //     perror(" Error in Writing in pipe\n");
+            //     exit(2);
+            // }
+        }
+        
+        if (remove(paramsSM[6]) == 0) printf("Deleted successfully"); 
+        else printf("Unable to delete the file"); 
     }
     else
     { //child
@@ -177,7 +203,7 @@ int InputDirector(int argc, char *argv[])
 
         paramsSM[2] = strcpy(paramsSM[2], "0");
         sprintf(paramsSM[3], "%d", numOfrecords);
-
+        fclose(fpb);
         printf(" I am the child process %d ", getpid());
         printf(" and will be replaced with ’ splitterMerger ’\n");
         execvp("./splitterMerger", paramsSM);
