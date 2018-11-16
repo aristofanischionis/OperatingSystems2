@@ -7,7 +7,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
-#include <poll.h>
+// #include <poll.h>
 #include "./HeaderFiles/Records.h"
 
 // char *fifo = "myfifo";
@@ -158,7 +158,7 @@ int InputDirector(int argc, char *argv[])
         
         printf("I am %d and now i'm gonna read from my pipe\n", getpid());
         int fd, rc, nread = 0;
-        struct pollfd fdarray[1];
+        // struct pollfd fdarray[1];
         // while ((pid = waitpid(-1, &status, 0)) != -1)
         // {
         //     printf("Process %d terminated\n", pid);
@@ -170,20 +170,20 @@ int InputDirector(int argc, char *argv[])
         }
         while ((nread = read(fd, &rec, sizeof(rec)) > 0))
         {
-            /* initialize poll parameters */
-            fdarray[0].fd = fd;
-            fdarray[0].events = POLLIN;
-            /* wait for incomign data or poll timeout */
-            rc = poll(fdarray, 1, 300);
-            if (rc == 0)
-            {
-                printf(" Poll timed - out --->>>>>>>>>>.\n ");
-                break;
-            }
-            else if ((rc == 1) && (fdarray[0].revents == POLLIN))
-            {
-                if (fdarray[0].fd == fd)
-                {
+            // /* initialize poll parameters */
+            // fdarray[0].fd = fd;
+            // fdarray[0].events = POLLIN;
+            // /* wait for incomign data or poll timeout */
+            // rc = poll(fdarray, 1, 300);
+            // if (rc == 0)
+            // {
+            //     printf(" Poll timed - out --->>>>>>>>>>.\n ");
+            //     break;
+            // }
+            // else if ((rc == 1) && (fdarray[0].revents == POLLIN))
+            // {
+            //     if (fdarray[0].fd == fd)
+            //     {
                     if (rec.AM == -1)
                     {
                         printf("----------->I just read end");
@@ -199,9 +199,12 @@ int InputDirector(int argc, char *argv[])
                     //     perror(" Error in Writing in pipe\n");
                     //     exit(2);
                     // }
-                }
-            }
+                // }
+            // }
         }
+        char stat[30];
+        nread = read(fd, stat, sizeof(stat));
+        printf("FINAL for kid %d is %s\n", getpid(), stat);
 
         if (remove(paramsSM[6]) == 0)
             printf("Deleted successfully");

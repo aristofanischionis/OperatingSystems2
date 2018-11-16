@@ -4,6 +4,7 @@
         "string.h": "c",
         "stdlib.h": "c",
         "records.h": "c",
-        "filehandling.h": "c"
+        "filehandling.h": "c",
+        "poll.h": "c"
     }
 }

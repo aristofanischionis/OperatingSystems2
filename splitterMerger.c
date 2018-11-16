@@ -7,7 +7,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
-#include <poll.h>
+// #include <poll.h>
 #include "./HeaderFiles/Records.h"
 
 void readWritefifos(int fd, int myfd)
@@ -15,35 +15,26 @@ void readWritefifos(int fd, int myfd)
     printf("I am %d and now i'm gonna read from my pipe\n", getpid());
     int nread = 0, rc;
     MyRecord rec;
-    struct pollfd fdarray[1];
+    // struct pollfd fdarray[1];
     while ((nread = read(fd, &rec, sizeof(rec)) > 0))
     {
-        /* initialize poll parameters */
-        fdarray[0].fd = fd;
-        fdarray[0].events = POLLIN;
-        /* wait for incomign data or poll timeout */
-        rc = poll(fdarray, 1, 300);
-        if (rc == 0)
-        {
-            printf("Poll timed - out .\n");
-            break;
-        }
-        else if ((rc == 1) && (fdarray[0].revents == POLLIN))
-        {
-            if (fdarray[0].fd == fd)
-            {
+        // /* initialize poll parameters */
+        // fdarray[0].fd = fd;
+        // fdarray[0].events = POLLIN;
+        // /* wait for incomign data or poll timeout */
+        // rc = poll(fdarray, 1, 300);
+        // if (rc == 0)
+        // {
+        //     printf("Poll timed - out .\n");
+        //     break;
+        // }
+        // else if ((rc == 1) && (fdarray[0].revents == POLLIN))
+        // {
+        //     if (fdarray[0].fd == fd)
+        //     {
                 if (rec.AM == -1)
                 {
                     printf("I just read end\n");
-                    char stat[30];
-                    nread = read(fd, stat, sizeof(stat));
-                    printf("time for kid %d is %s\n", getpid(), stat);
-                    // write this time to my dad's pipe
-                    if (write(myfd, stat, sizeof(stat)) == -1)
-                    {
-                        perror(" Error in Writing in pipe\n");
-                        exit(2);
-                    }
                     break;
                 }
                 printf("%ld %s %s  %s %d %s %s %-9.2f\n",
@@ -56,10 +47,18 @@ void readWritefifos(int fd, int myfd)
                     perror(" Error in Writing in pipe\n");
                     exit(2);
                 }
-            }
-        }
+            // }
+        // }
     }
-
+    char stat[30];
+    nread = read(fd, stat, sizeof(stat));
+    printf("time for kid %d is %s\n", getpid(), stat);
+    // write this time to my dad's pipe
+    if (write(myfd, stat, sizeof(stat)) == -1)
+    {
+        perror(" Error in Writing in pipe\n");
+        exit(2);
+    }
 }
 
 void spawnKids(
