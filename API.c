@@ -17,6 +17,7 @@ int InputDirector(int argc, char *argv[])
     // Decode prompt ./myfind –h Height –d Datafile -p Pattern -s
     int i = 1;
     int h = 1;
+    int sum = 0;
     int sflag = 0;
     char *datafile;
     char *pattern;
@@ -156,7 +157,9 @@ int InputDirector(int argc, char *argv[])
         // reading the final results
         // int status = 0;
         // if ((wait(&status) != pid )) { perror("wait"); exit(1);}
-        
+        // pid_t wpid;
+        // int status =0;
+        // while((wpid = wait(&status)) > 0);
         printf("I am %d and now i'm gonna read from my pipe\n", getpid());
         int fd, nread = 0;
         if ((fd = open(paramsSM[6], O_RDONLY)) == -1)
@@ -179,6 +182,7 @@ int InputDirector(int argc, char *argv[])
                    rec.AM, rec.LastName, rec.FirstName,
                    rec.Street, rec.HouseID, rec.City, rec.postcode,
                    rec.salary);
+            sum++;
             // // write this result in my dad's pipe
             // if (write(myfd, &rec, sizeof(rec)) == -1)
             // {
@@ -191,9 +195,9 @@ int InputDirector(int argc, char *argv[])
         // char stat[25];
         // nread = read(fd, stat, sizeof(stat));
         // printf("FINAL for kid %d is %s\n", getpid(), stat);
-
+        printf("I have read %d records from file\n", sum);
         if (remove(paramsSM[6]) == 0)
-            printf("Deleted successfully");
+            printf("Deleted successfully\n");
         else
             printf("Unable to delete the file");
     }

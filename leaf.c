@@ -18,7 +18,7 @@ int findSubstring(char *tobechecked, char *pattern){
 }
 
 int main ( int argc , char * argv []) {
-    int i;
+    int i, sum=0;
     char *datafile;
     int rangeBeg;
     char *pattern;
@@ -71,6 +71,7 @@ int main ( int argc , char * argv []) {
         //  check if pattern exists in file
         if(findSubstring(tobechecked , pattern) ){
             // store this record to the pipe
+            sum++;
             rec2.AM = rec.AM;
             strncpy(rec2.LastName,rec.LastName,20);
             strncpy(rec2.FirstName,rec.FirstName,20);
@@ -86,7 +87,7 @@ int main ( int argc , char * argv []) {
         }
     }
     fclose(fpb);
-
+    printf("I am leaf %d and I found %d records in my range\n",getpid(), sum);
     clock_t end = clock();
     rec2.AM = -1;
     //

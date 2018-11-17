@@ -10,6 +10,40 @@
 // #include <poll.h>
 #include "./HeaderFiles/Records.h"
 
+void writeFakeRecord(int myfd)
+{
+    MyRecord rec1;
+    rec1.AM = -1;
+    //
+    strncpy(rec1.LastName, "rec1.LastName", 20);
+    strncpy(rec1.FirstName, "rec1.FirstName", 20);
+    strncpy(rec1.Street, "rec1.Street", 20);
+    rec1.HouseID = 0;
+    strncpy(rec1.City, "rec1.City", 20);
+    strncpy(rec1.postcode, "rec1", 6);
+    rec1.salary = 13;
+
+    //
+    if (write(myfd, &rec1, sizeof(rec1)) == -1)
+    { // to specify that statistics are coming for the dad
+        perror(" Error in Writing in pipe\n");
+        exit(2);
+    }
+}
+
+void writeStat(int fd, int myfd){
+    char stat[25];
+    int nread = 0;
+    nread = read(fd, stat, sizeof(stat));
+    // printf("time for kid %d is %s\n", getpid(), stat);
+    // write this time to my dad's pipe
+    if (write(myfd, stat, sizeof(stat)) == -1)
+    {
+        perror(" Error in Writing in pipe\n");
+        exit(2);
+    }
+}
+
 void readWritefifos(int fd, int myfd)
 {
     printf("I am %d and now i'm gonna read from my pipe\n", getpid());
@@ -20,24 +54,7 @@ void readWritefifos(int fd, int myfd)
     {
         if (rec.AM == -1)
         {
-            // printf("THIS IS READWRITEFIFOSI just read end\n");
-            MyRecord rec1;
-            rec1.AM = -1;
-            //
-            strncpy(rec1.LastName, "rec1.LastName", 20);
-            strncpy(rec1.FirstName, "rec1.FirstName", 20);
-            strncpy(rec1.Street, "rec1.Street", 20);
-            rec1.HouseID = 0;
-            strncpy(rec1.City, "rec1.City", 20);
-            strncpy(rec1.postcode, "rec1", 6);
-            rec1.salary = 13;
-
-            //
-            if (write(myfd, &rec1, sizeof(rec1)) == -1)
-            { // to specify that statistics are coming for the dad
-                perror(" Error in Writing in pipe\n");
-                exit(2);
-            }
+            writeFakeRecord(myfd);
             break;
         }
         // printf("THIS IS WHAT I READ------->%ld %s %s  %s %d %s %s %-9.2f\n",
@@ -59,18 +76,46 @@ void readWritefifos(int fd, int myfd)
             exit(2);
         }
     }
-    char stat[25];
-    nread = read(fd, stat, sizeof(stat));
-    printf("time for kid %d is %s\n", getpid(), stat);
-    // write this time to my dad's pipe
-    if (write(myfd, stat, sizeof(stat)) == -1)
-    {
-        perror(" Error in Writing in pipe\n");
-        exit(2);
-    }
+    writeStat(fd, myfd);
     return;
 }
 
+void readWriteSMfifos(int fd, int myfd){
+    printf("I am SM %d and now i'm gonna read from my pipe\n", getpid());
+    int nread = 0;
+    MyRecord rec;
+    MyRecord rec2;
+    while ((nread = read(fd, &rec, sizeof(rec)) > 0))
+        {
+
+            if (rec.AM == -1)
+            {
+            // printf("THIS IS readWriteSMfifos just read end\n");
+            writeFakeRecord(myfd);
+            writeStat(fd, myfd);
+            continue;
+            }
+            // printf("HELLOOOO ITS SM ->>>>>%ld %s %s  %s %d %s %s %-9.2f\n",
+            //        rec.AM, rec.LastName, rec.FirstName,
+            //        rec.Street, rec.HouseID, rec.City, rec.postcode,
+            //        rec.salary);
+
+            rec2.AM = rec.AM;
+            strncpy(rec2.LastName, rec.LastName, 20);
+            strncpy(rec2.FirstName, rec.FirstName, 20);
+            strncpy(rec2.Street, rec.Street, 20);
+            rec2.HouseID = rec.HouseID;
+            strncpy(rec2.City, rec.City, 20);
+            strncpy(rec2.postcode, rec.postcode, 6);
+            rec2.salary = rec.salary;
+            if (write(myfd, &rec2, sizeof(rec2)) == -1)
+            {
+                perror(" Error in Writing in pipe\n");
+                exit(2);
+            }
+
+        }
+}
 void spawnKids(
     char *argv[],
     char *datafile,
@@ -164,6 +209,9 @@ void spawnKids(
         }
         else if (pid)
         {
+            // pid_t wpid;
+            // int status =0;
+            // while((wpid = wait(&status)) > 0);
             // waitpid(pid, &status, 0);
             continue;
         }
@@ -175,20 +223,11 @@ void spawnKids(
     }
     // parent
     printf(" I am the parent process % d\n", getpid());
-    // while ((pid1 = waitpid(-1, &status, 0)) != -1)
-    // {
-    //     printf("Process %d terminated\n", pid1);
-    // }
     if ((fd1 = open(KidResults1, O_RDONLY)) < 0)
     {
         perror("fifo open error");
         exit(1);
     }
-    // while ((pid2 = waitpid(-1, &status, 0)) != -1)
-    //     {
-    //         printf("Process %d terminated\n", pid2);
-    //     }
-
     if ((fd2 = open(KidResults2, O_RDONLY)) < 0)
     {
         perror("fifo open error");
@@ -227,11 +266,11 @@ void spawnKids(
     }
     // remove files
     if (remove(KidResults2) == 0)
-            printf("Deleted successfully");
+            printf("Deleted successfully %s\n", KidResults2);
     else
         printf("Unable to delete the file");
     if (remove(KidResults1) == 0)
-            printf("Deleted successfully");
+            printf("Deleted successfully %s\n",KidResults1);
     else
         printf("Unable to delete the file");
     //
@@ -342,6 +381,9 @@ void spawnSMs(
         }
         else if (pid)
         {
+            // pid_t wpid;
+            // int status =0;
+            // while((wpid = wait(&status)) > 0);
             // waitpid(pid, &status, 0);
             continue;
         }
@@ -353,38 +395,24 @@ void spawnSMs(
     }
     // parent
     printf(" I am the parent process % d\n", getpid());
-    if ((fd2 = open(SMResults2, O_RDONLY)) == -1)
-    {
-        perror("fifo open error");
-        exit(1);
-    }
     if ((fd1 = open(SMResults1, O_RDONLY)) == -1)
     {
         perror("fifo open error");
         exit(1);
     }
+    if ((fd2 = open(SMResults2, O_RDONLY)) == -1)
+    {
+        perror("fifo open error");
+        exit(1);
+    }
     // read and write to my dad's pipe
-    readWritefifos(fd2, myfd);
-    readWritefifos(fd1, myfd);
+    readWriteSMfifos(fd2, myfd);
+    readWriteSMfifos(fd1, myfd);
     // end of timer
     clock_t end = clock();
-    MyRecord rec;
-    rec.AM = -1;
-    //
-    strncpy(rec.LastName, "rec.LastName", 20);
-    strncpy(rec.FirstName, "rec.FirstName", 20);
-    strncpy(rec.Street, "rec.Street", 20);
-    rec.HouseID = 0;
-    strncpy(rec.City, "rec.City", 20);
-    strncpy(rec.postcode, "rec", 6);
-    rec.salary = 13;
 
-    //
-    if (write(myfd, &rec, sizeof(rec)) == -1)
-    { // to specify that statistics are coming for the dad
-        perror(" Error in Writing in pipe\n");
-        exit(2);
-    }
+    writeFakeRecord(myfd);
+
     char tobewritten[25];
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     printf("PID %d needed %f\n", getpid(), time_spent);
@@ -396,11 +424,11 @@ void spawnSMs(
     }
     // remove files
     if (remove(SMResults1) == 0)
-            printf("Deleted successfully");
+            printf("Deleted successfully %s\n", SMResults1);
     else
         printf("Unable to delete the file");
     if (remove(SMResults2) == 0)
-            printf("Deleted successfully");
+            printf("Deleted successfully%s\n",SMResults2);
     else
         printf("Unable to delete the file");
     //
