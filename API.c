@@ -155,8 +155,6 @@ int InputDirector(int argc, char *argv[])
     { // parent
         printf(" I am the parent process % d\n", getpid());
         // reading the final results
-        // int status = 0;
-        // if ((wait(&status) != pid )) { perror("wait"); exit(1);}
         // pid_t wpid;
         // int status =0;
         // while((wpid = wait(&status)) > 0);
@@ -167,6 +165,8 @@ int InputDirector(int argc, char *argv[])
             perror("fifo open error");
             exit(1);
         }
+        FILE *final;
+        final = fopen("ResultsNotSorted", "w");
         while ((nread = read(fd, &rec, sizeof(rec)) > 0))
         {
 
@@ -178,24 +178,19 @@ int InputDirector(int argc, char *argv[])
                 printf("FINAL for kid %d is %s\n", getpid(), stat);
                 continue;
             }
-            printf("HELLOOOO ITS ROOOTTTT ->>>>>%ld %s %s  %s %d %s %s %-9.2f\n",
-                   rec.AM, rec.LastName, rec.FirstName,
+            // printf("HELLOOOO ITS ROOOTTTT ->>>>>%ld %s %s  %s %d %s %s %-9.2f\n",
+            //        rec.AM, rec.LastName, rec.FirstName,
+            //        rec.Street, rec.HouseID, rec.City, rec.postcode,
+            //        rec.salary);
+            sum++;
+            // write data to a file in order to fork a new process and call sort on it
+            fprintf(final, "%ld %s %s  %s %d %s %s %-9.2f\n",rec.AM, rec.LastName, rec.FirstName,
                    rec.Street, rec.HouseID, rec.City, rec.postcode,
                    rec.salary);
-            sum++;
-            // // write this result in my dad's pipe
-            // if (write(myfd, &rec, sizeof(rec)) == -1)
-            // {
-            //     perror(" Error in Writing in pipe\n");
-            //     exit(2);
-            // }
-            // }
-            // }
         }
-        // char stat[25];
-        // nread = read(fd, stat, sizeof(stat));
-        // printf("FINAL for kid %d is %s\n", getpid(), stat);
+        
         printf("I have read %d records from file\n", sum);
+        fclose(final);
         if (remove(paramsSM[6]) == 0)
             printf("Deleted successfully\n");
         else
