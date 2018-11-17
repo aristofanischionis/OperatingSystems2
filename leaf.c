@@ -80,7 +80,7 @@ int main ( int argc , char * argv []) {
             strncpy(rec2.postcode,rec.postcode,6);
             rec2.salary = rec.salary;
             if (write(fd, &rec2, sizeof(rec2)) == -1){ 
-                perror(" Error in Writing in pipe\n" ); 
+                perror(" Error at Writing in pipe\n" ); 
                 exit(2) ;
             }
         }
@@ -91,12 +91,12 @@ int main ( int argc , char * argv []) {
     rec2.AM = -1;
     //
     if (write(fd, &rec2, sizeof(rec2)) == -1){  // to specify that statistics are coming
-        perror(" Error in Writing in pipe\n" ); 
+        perror(" Error at Writing in pipe\n" ); 
         exit (2) ;
     }
     char tobewritten[25];
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    // printf("PID %d needed ----------->%f\n",getpid(), time_spent);
+    // printf("KIDDO PID %d needed ----------->%f\n",getpid(), time_spent);
     sprintf(tobewritten, "Searcher %f", time_spent );
     if ((write(fd, tobewritten, sizeof(tobewritten)) ) == -1){ 
         perror(" Error at Writing in pipe\n" ); 

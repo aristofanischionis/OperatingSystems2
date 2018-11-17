@@ -154,15 +154,11 @@ int InputDirector(int argc, char *argv[])
     { // parent
         printf(" I am the parent process % d\n", getpid());
         // reading the final results
+        // int status = 0;
         // if ((wait(&status) != pid )) { perror("wait"); exit(1);}
         
         printf("I am %d and now i'm gonna read from my pipe\n", getpid());
-        int fd, rc, nread = 0;
-        // struct pollfd fdarray[1];
-        // while ((pid = waitpid(-1, &status, 0)) != -1)
-        // {
-        //     printf("Process %d terminated\n", pid);
-        // }
+        int fd, nread = 0;
         if ((fd = open(paramsSM[6], O_RDONLY)) == -1)
         {
             perror("fifo open error");
@@ -170,41 +166,31 @@ int InputDirector(int argc, char *argv[])
         }
         while ((nread = read(fd, &rec, sizeof(rec)) > 0))
         {
-            // /* initialize poll parameters */
-            // fdarray[0].fd = fd;
-            // fdarray[0].events = POLLIN;
-            // /* wait for incomign data or poll timeout */
-            // rc = poll(fdarray, 1, 300);
-            // if (rc == 0)
+
+            if (rec.AM == -1)
+            {
+                printf("----------->I have to read statistics");
+                char stat[25];
+                nread = read(fd, stat, sizeof(stat));
+                printf("FINAL for kid %d is %s\n", getpid(), stat);
+                continue;
+            }
+            printf("HELLOOOO ITS ROOOTTTT ->>>>>%ld %s %s  %s %d %s %s %-9.2f\n",
+                   rec.AM, rec.LastName, rec.FirstName,
+                   rec.Street, rec.HouseID, rec.City, rec.postcode,
+                   rec.salary);
+            // // write this result in my dad's pipe
+            // if (write(myfd, &rec, sizeof(rec)) == -1)
             // {
-            //     printf(" Poll timed - out --->>>>>>>>>>.\n ");
-            //     break;
+            //     perror(" Error in Writing in pipe\n");
+            //     exit(2);
             // }
-            // else if ((rc == 1) && (fdarray[0].revents == POLLIN))
-            // {
-            //     if (fdarray[0].fd == fd)
-            //     {
-                    if (rec.AM == -1)
-                    {
-                        printf("----------->I just read end");
-                        break;
-                    }
-                    printf("%ld %s %s  %s %d %s %s %-9.2f\n",
-                           rec.AM, rec.LastName, rec.FirstName,
-                           rec.Street, rec.HouseID, rec.City, rec.postcode,
-                           rec.salary);
-                    // // write this result in my dad's pipe
-                    // if (write(myfd, &rec, sizeof(rec)) == -1)
-                    // {
-                    //     perror(" Error in Writing in pipe\n");
-                    //     exit(2);
-                    // }
-                // }
+            // }
             // }
         }
-        char stat[30];
-        nread = read(fd, stat, sizeof(stat));
-        printf("FINAL for kid %d is %s\n", getpid(), stat);
+        // char stat[25];
+        // nread = read(fd, stat, sizeof(stat));
+        // printf("FINAL for kid %d is %s\n", getpid(), stat);
 
         if (remove(paramsSM[6]) == 0)
             printf("Deleted successfully");

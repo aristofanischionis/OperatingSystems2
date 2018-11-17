@@ -13,44 +13,53 @@
 void readWritefifos(int fd, int myfd)
 {
     printf("I am %d and now i'm gonna read from my pipe\n", getpid());
-    int nread = 0, rc;
+    int nread = 0;
     MyRecord rec;
-    // struct pollfd fdarray[1];
+    MyRecord rec2;
     while ((nread = read(fd, &rec, sizeof(rec)) > 0))
     {
-        // /* initialize poll parameters */
-        // fdarray[0].fd = fd;
-        // fdarray[0].events = POLLIN;
-        // /* wait for incomign data or poll timeout */
-        // rc = poll(fdarray, 1, 300);
-        // if (rc == 0)
-        // {
-        //     printf("Poll timed - out .\n");
-        //     break;
-        // }
-        // else if ((rc == 1) && (fdarray[0].revents == POLLIN))
-        // {
-        //     if (fdarray[0].fd == fd)
-        //     {
-                if (rec.AM == -1)
-                {
-                    printf("I just read end\n");
-                    break;
-                }
-                printf("%ld %s %s  %s %d %s %s %-9.2f\n",
-                       rec.AM, rec.LastName, rec.FirstName,
-                       rec.Street, rec.HouseID, rec.City, rec.postcode,
-                       rec.salary);
-                // write this result in my dad's pipe
-                if (write(myfd, &rec, sizeof(rec)) == -1)
-                {
-                    perror(" Error in Writing in pipe\n");
-                    exit(2);
-                }
-            // }
-        // }
+        if (rec.AM == -1)
+        {
+            // printf("THIS IS READWRITEFIFOSI just read end\n");
+            MyRecord rec1;
+            rec1.AM = -1;
+            //
+            strncpy(rec1.LastName, "rec1.LastName", 20);
+            strncpy(rec1.FirstName, "rec1.FirstName", 20);
+            strncpy(rec1.Street, "rec1.Street", 20);
+            rec1.HouseID = 0;
+            strncpy(rec1.City, "rec1.City", 20);
+            strncpy(rec1.postcode, "rec1", 6);
+            rec1.salary = 13;
+
+            //
+            if (write(myfd, &rec1, sizeof(rec1)) == -1)
+            { // to specify that statistics are coming for the dad
+                perror(" Error in Writing in pipe\n");
+                exit(2);
+            }
+            break;
+        }
+        // printf("THIS IS WHAT I READ------->%ld %s %s  %s %d %s %s %-9.2f\n",
+        //        rec.AM, rec.LastName, rec.FirstName,
+        //        rec.Street, rec.HouseID, rec.City, rec.postcode,
+        //        rec.salary);
+
+        rec2.AM = rec.AM;
+        strncpy(rec2.LastName, rec.LastName, 20);
+        strncpy(rec2.FirstName, rec.FirstName, 20);
+        strncpy(rec2.Street, rec.Street, 20);
+        rec2.HouseID = rec.HouseID;
+        strncpy(rec2.City, rec.City, 20);
+        strncpy(rec2.postcode, rec.postcode, 6);
+        rec2.salary = rec.salary;
+        if (write(myfd, &rec2, sizeof(rec2)) == -1)
+        {
+            perror(" Error in Writing in pipe\n");
+            exit(2);
+        }
     }
-    char stat[30];
+    char stat[25];
     nread = read(fd, stat, sizeof(stat));
     printf("time for kid %d is %s\n", getpid(), stat);
     // write this time to my dad's pipe
@@ -59,6 +68,7 @@ void readWritefifos(int fd, int myfd)
         perror(" Error in Writing in pipe\n");
         exit(2);
     }
+    return;
 }
 
 void spawnKids(
@@ -192,7 +202,15 @@ void spawnKids(
     MyRecord rec;
     rec.AM = -1;
     //
+    strncpy(rec.LastName, "rec.LastName", 20);
+    strncpy(rec.FirstName, "rec.FirstName", 20);
+    strncpy(rec.Street, "rec.Street", 20);
+    rec.HouseID = 0;
+    strncpy(rec.City, "rec.City", 20);
+    strncpy(rec.postcode, "rec", 6);
+    rec.salary = 13;
 
+    //
     if (write(myfd, &rec, sizeof(rec)) == -1)
     { // to specify that statistics are coming for the dad
         perror(" Error in Writing in pipe\n");
@@ -207,6 +225,16 @@ void spawnKids(
         perror(" Error at Writing in pipe\n");
         exit(2);
     }
+    // remove files
+    if (remove(KidResults2) == 0)
+            printf("Deleted successfully");
+    else
+        printf("Unable to delete the file");
+    if (remove(KidResults1) == 0)
+            printf("Deleted successfully");
+    else
+        printf("Unable to delete the file");
+    //
     exit(0);
 }
 
@@ -224,8 +252,6 @@ void spawnSMs(
     char *paramsSM[argc];
     int num1, num2;
     int fd1, fd2;
-    pid_t pid1, pid2;
-    int status;
     paramsSM[0] = (char *)malloc(5);
     strcpy(paramsSM[0], "./splitterMerger");
     paramsSM[1] = (char *)malloc(strlen(datafile) + 1);
@@ -236,7 +262,7 @@ void spawnSMs(
     strcpy(paramsSM[4], pattern);
     paramsSM[5] = (char *)malloc(12);
     sprintf(paramsSM[5], "%d", h - 1);
-    paramsSM[6] = (char *)malloc(20); // namedpipe for results
+    paramsSM[6] = (char *)malloc(30); // namedpipe for results
     if (sflag)
     {
         paramsSM[7] = (char *)malloc(3);
@@ -271,113 +297,113 @@ void spawnSMs(
     // placing the timer
     clock_t begin = clock();
     //forking the kids
-    if ((pid1 = fork()) == -1)
+    pid_t pid;
+    for (int i = 0; i < 2; i++)
     {
-        perror(" fork ");
-        exit(1);
-    }
-    if (pid1 != 0)
-    {
-        printf(" I am the parent process % d\n", getpid());
-        while ((pid1 = waitpid(-1, &status, 0)) != -1)
+        pid = fork();
+        if (pid == 0)
         {
-            printf("Process %d terminated\n", pid1);
-        }
-
-        // read and write to my dad's pipe
-        if ((pid2 = fork()) == -1)
-        {
-            perror(" fork ");
-            exit(1);
-        }
-        if (pid2 != 0)
-        { // parent
-            printf(" I am the parent process % d\n", getpid());
-            while ((pid2 = waitpid(-1, &status, 0)) != -1)
-            {
-                printf("Process %d terminated\n", pid2);
-            }
-            if ((fd2 = open(SMResults2, O_RDONLY)) == -1)
-            {
-                perror("fifo open error");
+            // do childern stuff
+            if (i == 0)
+            { // child 1
+                if (sflag)
+                {
+                    //have to think about it
+                }
+                else
+                {
+                    paramsSM[2] = strcpy(paramsSM[2], argv[2]);
+                    sprintf(paramsSM[3], "%d", num1);
+                }
+                strcpy(paramsSM[6], SMResults1);
+                printf(" I am the child process %d ", getpid());
+                printf(" and will be replaced with ’ splitterMerger ’\n");
+                execvp("./splitterMerger", paramsSM);
                 exit(1);
             }
-            // read and write to my dad's pipe
-            // if ((wait(&status) != pid2 )) { perror("wait"); exit(1);}
-            readWritefifos(fd2, myfd);
-            // readWriteStatistics(myfd, fd2, pid2);
-            // if (wait(&status) != pid2)
-            // { // check if child returns
-            //     perror(" wait ");
-            //     exit(1);
-            // }
-            // printf(" Child terminated with exit code %d\n", status >> 8);
-        }
-        else
-        { //child 2
-            if (sflag)
-            {
-                //have to think about it
-            }
             else
-            {
-                sprintf(paramsSM[2], "%d", rangeBeg + num1);
-                sprintf(paramsSM[3], "%d", num2);
-            }
-            strcpy(paramsSM[6], SMResults2);
+            { // child 2
+                if (sflag)
+                {
+                    //have to think about it
+                }
+                else
+                {
+                    sprintf(paramsSM[2], "%d", rangeBeg + num1);
+                    sprintf(paramsSM[3], "%d", num2);
+                }
+                strcpy(paramsSM[6], SMResults2);
 
-            printf(" I am the child process %d ", getpid());
-            printf(" and will be replaced with ’ splitterMerger ’\n");
-            execvp("./splitterMerger", paramsSM);
-            exit(1);
+                printf(" I am the child process %d ", getpid());
+                printf(" and will be replaced with ’ splitterMerger ’\n");
+                execvp("./splitterMerger", paramsSM);
+                exit(1);
+            }
         }
-        // parent
-        // if ((wait(&status) != pid1 )) { perror("wait"); exit(1);}
-        if ((fd1 = open(SMResults1, O_RDONLY)) == -1)
+        else if (pid)
         {
-            perror("fifo open error");
-            exit(1);
-        }
-        readWritefifos(fd1, myfd);
-        // end of timer
-        clock_t end = clock();
-        MyRecord rec;
-        rec.AM = -1;
-        //
-        if (write(myfd, &rec, sizeof(rec)) == -1)
-        { // to specify that statistics are coming for the dad
-            perror(" Error in Writing in pipe\n");
-            exit(2);
-        }
-        char tobewritten[25];
-        double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-        printf("PID %d needed %f\n", getpid(), time_spent);
-        sprintf(tobewritten, "SM %f", time_spent);
-        if ((write(myfd, tobewritten, sizeof(tobewritten))) == -1)
-        {
-            perror(" Error at Writing in pipe\n");
-            exit(2);
-        }
-        exit(0);
-    }
-    else
-    { //child 1
-        if (sflag)
-        {
-            //have to think about it
+            // waitpid(pid, &status, 0);
+            continue;
         }
         else
         {
-            paramsSM[2] = strcpy(paramsSM[2], argv[2]);
-            sprintf(paramsSM[3], "%d", num1);
+            printf("Error in forking kids\n");
+            exit(1);
         }
-        strcpy(paramsSM[6], SMResults1);
-        printf(" I am the child process %d ", getpid());
-        printf(" and will be replaced with ’ splitterMerger ’\n");
-        execvp("./splitterMerger", paramsSM);
+    }
+    // parent
+    printf(" I am the parent process % d\n", getpid());
+    if ((fd2 = open(SMResults2, O_RDONLY)) == -1)
+    {
+        perror("fifo open error");
         exit(1);
     }
+    if ((fd1 = open(SMResults1, O_RDONLY)) == -1)
+    {
+        perror("fifo open error");
+        exit(1);
+    }
+    // read and write to my dad's pipe
+    readWritefifos(fd2, myfd);
+    readWritefifos(fd1, myfd);
+    // end of timer
+    clock_t end = clock();
+    MyRecord rec;
+    rec.AM = -1;
+    //
+    strncpy(rec.LastName, "rec.LastName", 20);
+    strncpy(rec.FirstName, "rec.FirstName", 20);
+    strncpy(rec.Street, "rec.Street", 20);
+    rec.HouseID = 0;
+    strncpy(rec.City, "rec.City", 20);
+    strncpy(rec.postcode, "rec", 6);
+    rec.salary = 13;
 
+    //
+    if (write(myfd, &rec, sizeof(rec)) == -1)
+    { // to specify that statistics are coming for the dad
+        perror(" Error in Writing in pipe\n");
+        exit(2);
+    }
+    char tobewritten[25];
+    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
+    printf("PID %d needed %f\n", getpid(), time_spent);
+    sprintf(tobewritten, "SM %f", time_spent);
+    if ((write(myfd, tobewritten, sizeof(tobewritten))) == -1)
+    {
+        perror(" Error at Writing in pipe\n");
+        exit(2);
+    }
+    // remove files
+    if (remove(SMResults1) == 0)
+            printf("Deleted successfully");
+    else
+        printf("Unable to delete the file");
+    if (remove(SMResults2) == 0)
+            printf("Deleted successfully");
+    else
+        printf("Unable to delete the file");
+    //
     exit(0);
 }
 
