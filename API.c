@@ -7,10 +7,16 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
-// #include <poll.h>
+#include <signal.h>
 #include "./HeaderFiles/Records.h"
 
-// char *fifo = "myfifo";
+int SignalsReceived;
+
+void handler(){
+    signal(SIGUSR2,handler);
+    printf("DADDY: I have received a SIGUSR2, FROM MY KIDDO\n");
+    SignalsReceived++;
+}
 
 int InputDirector(int argc, char *argv[])
 {
@@ -25,6 +31,7 @@ int InputDirector(int argc, char *argv[])
     MyRecord rec;
     long lSize;
     int numOfrecords;
+    SignalsReceived = 0;
     while (i < argc)
     {
         if (strcmp(argv[i], "-h") == 0)
@@ -115,8 +122,7 @@ int InputDirector(int argc, char *argv[])
         i++;
     }
     //root node
-    char *paramsSM[argc + 1];
-
+    char *paramsSM[argc + 2];
     paramsSM[0] = (char *)malloc(5);
     strcpy(paramsSM[0], "./splitterMerger");
     paramsSM[1] = (char *)malloc(strlen(datafile) + 1);
@@ -129,6 +135,9 @@ int InputDirector(int argc, char *argv[])
     sprintf(paramsSM[5], "%d", h);
     paramsSM[6] = (char *)malloc(20);
     strcpy(paramsSM[6], "FinalResults");
+    // giving my pid to the leafs through the SMs in order to receive the signals
+    paramsSM[7] = (char *)malloc(10);
+    sprintf(paramsSM[7] , "%d", getpid()); 
     // making the FinalResults fifo
     if (mkfifo(paramsSM[6], 0666) == -1)
     {
@@ -138,12 +147,13 @@ int InputDirector(int argc, char *argv[])
     // check for the sflag
     if (sflag)
     {
-        paramsSM[7] = (char *)malloc(3);
-        strcpy(paramsSM[7], "-s");
-        paramsSM[8] = NULL;
+        paramsSM[8] = (char *)malloc(3);
+        strcpy(paramsSM[8], "-s");
+        paramsSM[9] = NULL;
     }
-    else
-        paramsSM[7] = NULL;
+    else paramsSM[8] = NULL;
+    // setting the signal receiver
+    signal(SIGUSR2,handler);
 
     // forking the first SM
     if ((pid = fork()) == -1)
@@ -178,10 +188,6 @@ int InputDirector(int argc, char *argv[])
                 printf("FINAL for kid %d is %s\n", getpid(), stat);
                 continue;
             }
-            // printf("HELLOOOO ITS ROOOTTTT ->>>>>%ld %s %s  %s %d %s %s %-9.2f\n",
-            //        rec.AM, rec.LastName, rec.FirstName,
-            //        rec.Street, rec.HouseID, rec.City, rec.postcode,
-            //        rec.salary);
             sum++;
             // write data to a file in order to fork a new process and call sort on it
             fprintf(final, "%ld %s %s  %s %d %s %s %-9.2f\n",rec.AM, rec.LastName, rec.FirstName,
@@ -207,18 +213,27 @@ int InputDirector(int argc, char *argv[])
             //child
             printf(" I am the child process %d ", getpid());
             printf(" and will be replaced with ’ Sort ’\n");
-            char *params[5];
-            strcpy(params[0], "sort");
-            strcpy(params[1], "-k");
-            strcpy(params[2], "1");
-            strcpy(params[3], "ResultsNotSorted");
-            params[4] = NULL;
+            char *params[6];
+            params[0] = "sort";
+            params[1] = "-k";
+            params[2] = "1";
+            params[3] = "-g";
+            params[4] = "ResultsNotSorted";
+            params[5] = NULL;
             execvp("sort", params);
         }
-        else{
-            //parent
-            // print statistics
-        }
+        //parent
+        // waits for kids to finish
+        pid_t wpid;
+        int status = 0;
+        while ((wpid = wait(&status)) > 0);
+        // rm the ResultsNotSorted file
+        if (remove("ResultsNotSorted") == 0) printf("Deleted successfully ResultsNotSorted\n");
+        else printf("Unable to delete the file");
+        // printf signals
+        printf("I am the parent process and I have received %d signals from my kids\n", SignalsReceived);
+        // print statistics
+        printf("    Iam dad1\n");
     }
     else
     { //child

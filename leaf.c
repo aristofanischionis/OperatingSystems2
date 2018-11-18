@@ -7,6 +7,7 @@
 #include <string.h>
 #include <errno.h>
 #include <time.h>
+#include <signal.h>
 #include "./HeaderFiles/Records.h"
 
 int findSubstring(char *tobechecked, char *pattern){
@@ -28,8 +29,8 @@ int main ( int argc , char * argv []) {
     MyRecord rec2 ;
     int numOfrecords;
     char tobechecked[sizeof(rec)+1];
-    if ( argc != 6) { 
-        printf( "filename, rangeBeg, numOfrecords, Pattern, results\n" ); 
+    if ( argc != 7) { 
+        printf( "filename, rangeBeg, numOfrecords, Pattern, results, parentPid\n" ); 
         exit(1); 
     }
     datafile = (char *)malloc(strlen(argv[1]) + 1);
@@ -41,7 +42,8 @@ int main ( int argc , char * argv []) {
     // taking fifo name for results and statistics
     char *fifo = (char *)malloc(strlen(argv[5]) + 1);
     strcpy(fifo, argv[5]);
-    
+    pid_t parentPid;
+    parentPid = atoi(argv[6]);
     // opening results fifo
     if ( ( fd = open( fifo , O_WRONLY )) == -1){ 
         perror("fifo open error" ); 
@@ -103,6 +105,10 @@ int main ( int argc , char * argv []) {
         perror(" Error at Writing in pipe\n" ); 
         exit (2) ;
     }
+    // send end signal to root
+    printf("\nKIDDO: sending SIGUSR2\n\n");
+    kill(parentPid,SIGUSR2);
+
     exit(0);
 
 }

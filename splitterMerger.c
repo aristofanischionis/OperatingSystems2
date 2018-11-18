@@ -124,9 +124,10 @@ void spawnKids(
     int numOfrecords,
     int h,
     int sflag,
-    int myfd)
+    int myfd,
+    char *parentPid)
 {
-    char *params[7];
+    char *params[8];
     int num1, num2;
     params[0] = (char *)malloc(5);
     strcpy(params[0], "./leaf");
@@ -137,7 +138,9 @@ void spawnKids(
     params[4] = (char *)malloc(strlen(pattern) + 1);
     strcpy(params[4], pattern);
     params[5] = (char *)malloc(30);
-    params[6] = NULL;
+    params[6] = (char *)malloc(10);
+    strcpy(params[6], parentPid);
+    params[7] = NULL;
     num1 = numOfrecords / 2;
     num2 = numOfrecords - num1;
 
@@ -286,7 +289,8 @@ void spawnSMs(
     int numOfrecords,
     int h,
     int sflag,
-    int myfd)
+    int myfd,
+    char *parentPid)
 {
     char *paramsSM[argc];
     int num1, num2;
@@ -302,14 +306,16 @@ void spawnSMs(
     paramsSM[5] = (char *)malloc(12);
     sprintf(paramsSM[5], "%d", h - 1);
     paramsSM[6] = (char *)malloc(30); // namedpipe for results
+    paramsSM[7] = (char *)malloc(10);
+    strcpy(paramsSM[7], parentPid);
     if (sflag)
     {
-        paramsSM[7] = (char *)malloc(3);
-        strcpy(paramsSM[6], "-s");
-        paramsSM[8] = NULL;
+        paramsSM[8] = (char *)malloc(3);
+        strcpy(paramsSM[8], "-s");
+        paramsSM[9] = NULL;
     }
     else
-        paramsSM[7] = NULL;
+        paramsSM[8] = NULL;
 
     num1 = numOfrecords / 2;
     num2 = numOfrecords - num1;
@@ -444,12 +450,13 @@ int main(int argc, char *argv[])
     int h;
     int sflag = 0;
     char *MyResults;
-    if (argc < 7)
+    char *parentPid;
+    if (argc < 8)
     {
-        printf("filename, rangeBeg, numOfrecords, Pattern, height, Results \n");
+        printf("filename, rangeBeg, numOfrecords, Pattern, height, Results, parentPid \n");
         exit(1);
     }
-    if (argc == 8)
+    if (argc == 9)
     {
         // -s flag is used
         sflag = 1;
@@ -463,6 +470,8 @@ int main(int argc, char *argv[])
     h = atoi(argv[5]);
     MyResults = (char *)malloc(strlen(argv[6]) + 1);
     strcpy(MyResults, argv[6]);
+    parentPid = (char *)malloc(10);
+    strcpy(parentPid, argv[7]);
     //
     int myfd;
     if ((myfd = open(MyResults, O_WRONLY)) == -1)
@@ -472,10 +481,10 @@ int main(int argc, char *argv[])
     }
     if (h == 1)
     {
-        spawnKids(argv, datafile, rangeBeg, pattern, numOfrecords, h, sflag, myfd);
+        spawnKids(argv, datafile, rangeBeg, pattern, numOfrecords, h, sflag, myfd, parentPid);
     }
     else
     {
-        spawnSMs(argc, argv, datafile, rangeBeg, pattern, numOfrecords, h, sflag, myfd);
+        spawnSMs(argc, argv, datafile, rangeBeg, pattern, numOfrecords, h, sflag, myfd, parentPid);
     }
 }
