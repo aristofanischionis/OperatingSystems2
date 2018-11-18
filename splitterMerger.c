@@ -268,14 +268,8 @@ void spawnKids(
         exit(2);
     }
     // remove files
-    if (remove(KidResults2) == 0)
-            printf("Deleted successfully %s\n", KidResults2);
-    else
-        printf("Unable to delete the file");
-    if (remove(KidResults1) == 0)
-            printf("Deleted successfully %s\n",KidResults1);
-    else
-        printf("Unable to delete the file");
+    remove(KidResults2);
+    remove(KidResults1);
     //
     exit(0);
 }
@@ -429,14 +423,8 @@ void spawnSMs(
         exit(2);
     }
     // remove files
-    if (remove(SMResults1) == 0)
-            printf("Deleted successfully %s\n", SMResults1);
-    else
-        printf("Unable to delete the file");
-    if (remove(SMResults2) == 0)
-            printf("Deleted successfully%s\n",SMResults2);
-    else
-        printf("Unable to delete the file");
+    remove(SMResults1);
+    remove(SMResults2);
     //
     exit(0);
 }

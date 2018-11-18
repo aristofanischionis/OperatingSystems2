@@ -6,20 +6,63 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <time.h>
 #include <signal.h>
+#include <time.h>
 #include "./HeaderFiles/Records.h"
 
-int SignalsReceived;
+int SignalsReceived = 0;
 
-void handler(){
-    signal(SIGUSR2,handler);
-    printf("DADDY: I have received a SIGUSR2, FROM MY KIDDO\n");
+void handler()
+{
+    signal(SIGUSR2, handler);
+    // printf("DADDY: I have received a SIGUSR2, FROM MY KIDDO\n");
     SignalsReceived++;
+}
+
+double MIN(double array[], int num){
+    double min = 10000.0;
+    for(int i = 0; i<num; i++){
+        if(array[i] < min){
+            min = array[i];
+        }
+    }
+    return min;
+}
+double MAX(double array[], int num){
+    double max = 0.0;
+    for(int i = 0; i<num; i++){
+        if(array[i] > max){
+            max = array[i];
+        }
+    }
+    return max;
+}
+double Average(double array[], int num){
+    double sum= 0.0;
+    for(int i=0 ; i < num;i++){
+        sum += array[i];
+    }
+    return sum/num;
+}
+void statistics(double leafs[], double SMs[], int leafnum, int smnum){
+    // calculate everything
+    double minl = MIN(leafs, leafnum);
+    double maxl = MAX(leafs, leafnum);
+    double averl = Average(leafs, leafnum);
+    double minsm = MIN(SMs, smnum);
+    double maxsm = MAX(SMs, smnum);
+    double aversm = Average(SMs, smnum);
+    // print everything
+    printf("-----------------STATISTICS STARTING HERE-----------------\n");
+    printf("Searchers min time is %f, max time is %f, average time is %f\n", minl, maxl, averl);
+    printf("Splitter/Mergers min time is %f, max time is %f, average time is %f\n", minsm, maxsm, aversm);
+    
 }
 
 int InputDirector(int argc, char *argv[])
 {
+    // start timer
+    clock_t start = clock();
     // Decode prompt ./myfind –h Height –d Datafile -p Pattern -s
     int i = 1;
     int h = 1;
@@ -31,7 +74,6 @@ int InputDirector(int argc, char *argv[])
     MyRecord rec;
     long lSize;
     int numOfrecords;
-    SignalsReceived = 0;
     while (i < argc)
     {
         if (strcmp(argv[i], "-h") == 0)
@@ -121,7 +163,7 @@ int InputDirector(int argc, char *argv[])
         }
         i++;
     }
-    //root node
+    //root node making the parameters for the SM
     char *paramsSM[argc + 2];
     paramsSM[0] = (char *)malloc(5);
     strcpy(paramsSM[0], "./splitterMerger");
@@ -153,8 +195,23 @@ int InputDirector(int argc, char *argv[])
     }
     else paramsSM[8] = NULL;
     // setting the signal receiver
-    signal(SIGUSR2,handler);
-
+    signal(SIGUSR2, handler);
+    // preparing for statistics
+    // h determines how many leafs and sm there will be
+    int leafnum = 1;
+    int smnum;
+    int height = h;
+    while(height)
+    {
+        height--;
+        leafnum = 2 * leafnum;
+    }
+    smnum = leafnum - 1;
+    double leaftimes[leafnum];
+    double smtimes[smnum];
+    int counteri = 0, counterj = 0;
+    const char s[2] = " ";
+    char *token;
     // forking the first SM
     if ((pid = fork()) == -1)
     {
@@ -182,26 +239,38 @@ int InputDirector(int argc, char *argv[])
 
             if (rec.AM == -1)
             {
-                printf("----------->I have to read statistics");
+                // printf("----------->I have to read statistics\n");
                 char stat[25];
                 nread = read(fd, stat, sizeof(stat));
-                printf("FINAL for kid %d is %s\n", getpid(), stat);
+                // printf("FINAL stat is %s\n", stat);
+                
+                token = strtok(stat, s);
+                if (strcmp(token, "SM") == 0)
+                {
+                    // time for a SM
+                    // printf(" SM stat found %s", strtok(NULL, s));
+                    smtimes[counteri] = atof(strtok(NULL, s));
+                    counteri++;
+                }
+                else if (strcmp(token, "Searcher") == 0)
+                {
+                    // time for a Searcher
+                    // printf(" Searcher stat found %s", strtok(NULL, s));
+                    leaftimes[counterj] = atof(strtok(NULL, s));
+                    counterj++;
+                }
                 continue;
             }
             sum++;
             // write data to a file in order to fork a new process and call sort on it
-            fprintf(final, "%ld %s %s  %s %d %s %s %-9.2f\n",rec.AM, rec.LastName, rec.FirstName,
-                   rec.Street, rec.HouseID, rec.City, rec.postcode,
-                   rec.salary);
+            fprintf(final, "%ld %s %s  %s %d %s %s %-9.2f\n", rec.AM, rec.LastName, rec.FirstName,
+                    rec.Street, rec.HouseID, rec.City, rec.postcode,
+                    rec.salary);
         }
-        
-        
-        fclose(final);
-        if (remove(paramsSM[6]) == 0)
-            printf("Deleted successfully\n");
-        else
-            printf("Unable to delete the file");
 
+        fclose(final);
+        // remove file
+        remove(paramsSM[6]);
         // fork to call the sort
         pid_t pidSort;
         if ((pidSort = fork()) == -1)
@@ -209,7 +278,8 @@ int InputDirector(int argc, char *argv[])
             perror(" fork ");
             exit(1);
         }
-        if(pidSort == 0){
+        if (pidSort == 0)
+        {
             //child
             // printf(" I am the child process %d ", getpid());
             // printf(" and will be replaced with ’ Sort ’\n");
@@ -228,14 +298,19 @@ int InputDirector(int argc, char *argv[])
         int status = 0;
         while ((wpid = wait(&status)) > 0);
         // rm the ResultsNotSorted file
-        if (remove("ResultsNotSorted") == 0) printf("Deleted successfully ResultsNotSorted\n");
-        else printf("Unable to delete the file");
+        remove("ResultsNotSorted");
         // sum of records read
         printf("I have read %d records from file\n", sum);
         // printf signals
         printf("I am the parent process and I have received %d signals from my kids\n", SignalsReceived);
         // print statistics
-        printf("    Iam dad1\n");
+        statistics(leaftimes, smtimes, leafnum, smnum);
+        clock_t end = clock();
+        double turnaround = (end - start) / (double)CLOCKS_PER_SEC;
+        printf("Turnaround time is %f\n", turnaround);
+
+        printf("-----------------STATISTICS END HERE----------------------\n");
+       
     }
     else
     { //child
