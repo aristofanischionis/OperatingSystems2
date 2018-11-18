@@ -195,6 +195,30 @@ int InputDirector(int argc, char *argv[])
             printf("Deleted successfully\n");
         else
             printf("Unable to delete the file");
+
+        // fork to call the sort
+        pid_t pidSort;
+        if ((pidSort = fork()) == -1)
+        {
+            perror(" fork ");
+            exit(1);
+        }
+        if(pidSort == 0){
+            //child
+            printf(" I am the child process %d ", getpid());
+            printf(" and will be replaced with ’ Sort ’\n");
+            char *params[5];
+            strcpy(params[0], "sort");
+            strcpy(params[1], "-k");
+            strcpy(params[2], "1");
+            strcpy(params[3], "ResultsNotSorted");
+            params[4] = NULL;
+            execvp("sort", params);
+        }
+        else{
+            //parent
+            // print statistics
+        }
     }
     else
     { //child
