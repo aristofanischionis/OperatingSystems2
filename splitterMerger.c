@@ -46,7 +46,7 @@ void writeStat(int fd, int myfd){
 
 void readWritefifos(int fd, int myfd)
 {
-    printf("I am %d and now i'm gonna read from my pipe\n", getpid());
+    // printf("I am %d and now i'm gonna read from my pipe\n", getpid());
     int nread = 0;
     MyRecord rec;
     MyRecord rec2;
@@ -81,7 +81,7 @@ void readWritefifos(int fd, int myfd)
 }
 
 void readWriteSMfifos(int fd, int myfd){
-    printf("I am SM %d and now i'm gonna read from my pipe\n", getpid());
+    // printf("I am SM %d and now i'm gonna read from my pipe\n", getpid());
     int nread = 0;
     MyRecord rec;
     MyRecord rec2;
@@ -187,8 +187,8 @@ void spawnKids(
                     sprintf(params[3], "%d", num1);
                 }
                 strcpy(params[5], KidResults1);
-                printf(" I am the child process %d ", getpid());
-                printf(" and will be replaced with ’ leaf ’\n");
+                // printf(" I am the child process %d ", getpid());
+                // printf(" and will be replaced with ’ leaf ’\n");
                 execvp("./leaf", params);
                 exit(1);
             }
@@ -204,8 +204,8 @@ void spawnKids(
                     sprintf(params[3], "%d", num2);
                 }
                 strcpy(params[5], KidResults2);
-                printf(" I am the child process %d ", getpid());
-                printf(" and will be replaced with ’ leaf ’\n");
+                // printf(" I am the child process %d ", getpid());
+                // printf(" and will be replaced with ’ leaf ’\n");
                 execvp("./leaf", params);
                 exit(1);
             }
@@ -225,7 +225,7 @@ void spawnKids(
         }
     }
     // parent
-    printf(" I am the parent process % d\n", getpid());
+    // printf(" I am the parent process % d\n", getpid());
     if ((fd1 = open(KidResults1, O_RDONLY)) < 0)
     {
         perror("fifo open error");
@@ -260,7 +260,7 @@ void spawnKids(
     }
     char tobewritten[25];
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    printf("PID %d needed %f\n", getpid(), time_spent);
+    // printf("PID %d needed %f\n", getpid(), time_spent);
     sprintf(tobewritten, "SM %f", time_spent);
     if ((write(myfd, tobewritten, sizeof(tobewritten))) == -1)
     {
@@ -361,8 +361,8 @@ void spawnSMs(
                     sprintf(paramsSM[3], "%d", num1);
                 }
                 strcpy(paramsSM[6], SMResults1);
-                printf(" I am the child process %d ", getpid());
-                printf(" and will be replaced with ’ splitterMerger ’\n");
+                // printf(" I am the child process %d ", getpid());
+                // printf(" and will be replaced with ’ splitterMerger ’\n");
                 execvp("./splitterMerger", paramsSM);
                 exit(1);
             }
@@ -379,8 +379,8 @@ void spawnSMs(
                 }
                 strcpy(paramsSM[6], SMResults2);
 
-                printf(" I am the child process %d ", getpid());
-                printf(" and will be replaced with ’ splitterMerger ’\n");
+                // printf(" I am the child process %d ", getpid());
+                // printf(" and will be replaced with ’ splitterMerger ’\n");
                 execvp("./splitterMerger", paramsSM);
                 exit(1);
             }
@@ -400,7 +400,7 @@ void spawnSMs(
         }
     }
     // parent
-    printf(" I am the parent process % d\n", getpid());
+    // printf(" I am the parent process % d\n", getpid());
     if ((fd1 = open(SMResults1, O_RDONLY)) == -1)
     {
         perror("fifo open error");
@@ -421,7 +421,7 @@ void spawnSMs(
 
     char tobewritten[25];
     double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
-    printf("PID %d needed %f\n", getpid(), time_spent);
+    // printf("PID %d needed %f\n", getpid(), time_spent);
     sprintf(tobewritten, "SM %f", time_spent);
     if ((write(myfd, tobewritten, sizeof(tobewritten))) == -1)
     {

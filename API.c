@@ -163,12 +163,12 @@ int InputDirector(int argc, char *argv[])
     }
     if (pid != 0)
     { // parent
-        printf(" I am the parent process % d\n", getpid());
+        // printf(" I am the parent process % d\n", getpid());
         // reading the final results
         // pid_t wpid;
         // int status =0;
         // while((wpid = wait(&status)) > 0);
-        printf("I am %d and now i'm gonna read from my pipe\n", getpid());
+        // printf("I am %d and now i'm gonna read from my pipe\n", getpid());
         int fd, nread = 0;
         if ((fd = open(paramsSM[6], O_RDONLY)) == -1)
         {
@@ -195,7 +195,7 @@ int InputDirector(int argc, char *argv[])
                    rec.salary);
         }
         
-        printf("I have read %d records from file\n", sum);
+        
         fclose(final);
         if (remove(paramsSM[6]) == 0)
             printf("Deleted successfully\n");
@@ -211,8 +211,8 @@ int InputDirector(int argc, char *argv[])
         }
         if(pidSort == 0){
             //child
-            printf(" I am the child process %d ", getpid());
-            printf(" and will be replaced with ’ Sort ’\n");
+            // printf(" I am the child process %d ", getpid());
+            // printf(" and will be replaced with ’ Sort ’\n");
             char *params[6];
             params[0] = "sort";
             params[1] = "-k";
@@ -230,6 +230,8 @@ int InputDirector(int argc, char *argv[])
         // rm the ResultsNotSorted file
         if (remove("ResultsNotSorted") == 0) printf("Deleted successfully ResultsNotSorted\n");
         else printf("Unable to delete the file");
+        // sum of records read
+        printf("I have read %d records from file\n", sum);
         // printf signals
         printf("I am the parent process and I have received %d signals from my kids\n", SignalsReceived);
         // print statistics
@@ -253,8 +255,8 @@ int InputDirector(int argc, char *argv[])
         paramsSM[2] = strcpy(paramsSM[2], "0");
         sprintf(paramsSM[3], "%d", numOfrecords);
         fclose(fpb);
-        printf(" I am the child process %d ", getpid());
-        printf(" and will be replaced with ’ splitterMerger ’\n");
+        // printf(" I am the child process %d ", getpid());
+        // printf(" and will be replaced with ’ splitterMerger ’\n");
         execvp("./splitterMerger", paramsSM);
     }
 

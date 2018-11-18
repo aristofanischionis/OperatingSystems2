@@ -89,7 +89,7 @@ int main ( int argc , char * argv []) {
         }
     }
     fclose(fpb);
-    printf("I am leaf %d and I found %d records in my range\n",getpid(), sum);
+    // printf("I am leaf %d and I found %d records in my range\n",getpid(), sum);
     clock_t end = clock();
     rec2.AM = -1;
     //
@@ -106,7 +106,6 @@ int main ( int argc , char * argv []) {
         exit (2) ;
     }
     // send end signal to root
-    printf("\nKIDDO: sending SIGUSR2\n\n");
     kill(parentPid,SIGUSR2);
 
     exit(0);
