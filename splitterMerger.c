@@ -6,8 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <time.h>
-// #include <poll.h>
+#include <sys/time.h>
 #include "./HeaderFiles/Records.h"
 
 void writeFakeRecord(int myfd)
@@ -166,7 +165,8 @@ void spawnKids(
     }
 
     // placing the timer
-    clock_t begin = clock();
+    struct timeval t0,t1;
+    gettimeofday(&t0, NULL);
     // forking the kids
     pid_t pid;
     for (int i = 0; i < 2; i++)
@@ -240,26 +240,11 @@ void spawnKids(
     readWritefifos(fd1, myfd);
 
     // end of timer
-    clock_t end = clock();
-    MyRecord rec;
-    rec.AM = -1;
-    //
-    strncpy(rec.LastName, "rec.LastName", 20);
-    strncpy(rec.FirstName, "rec.FirstName", 20);
-    strncpy(rec.Street, "rec.Street", 20);
-    rec.HouseID = 0;
-    strncpy(rec.City, "rec.City", 20);
-    strncpy(rec.postcode, "rec", 6);
-    rec.salary = 13;
-
-    //
-    if (write(myfd, &rec, sizeof(rec)) == -1)
-    { // to specify that statistics are coming for the dad
-        perror(" Error in Writing in pipe\n");
-        exit(2);
-    }
+    gettimeofday(&t1, NULL);
+    double time_spent = (double) (t1.tv_usec - t0.tv_usec) / 1000000 + (double) (t1.tv_sec - t0.tv_sec);
+    writeFakeRecord(myfd);
+    
     char tobewritten[25];
-    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     // printf("PID %d needed %f\n", getpid(), time_spent);
     sprintf(tobewritten, "SM %f", time_spent);
     if ((write(myfd, tobewritten, sizeof(tobewritten))) == -1)
@@ -334,7 +319,8 @@ void spawnSMs(
     }
 
     // placing the timer
-    clock_t begin = clock();
+    struct timeval t0,t1;
+    gettimeofday(&t0, NULL);
     //forking the kids
     pid_t pid;
     for (int i = 0; i < 2; i++)
@@ -409,12 +395,12 @@ void spawnSMs(
     readWriteSMfifos(fd2, myfd);
     readWriteSMfifos(fd1, myfd);
     // end of timer
-    clock_t end = clock();
+    gettimeofday(&t1, NULL);
+    double time_spent = (double) (t1.tv_usec - t0.tv_usec) / 1000000 + (double) (t1.tv_sec - t0.tv_sec);
 
     writeFakeRecord(myfd);
 
     char tobewritten[25];
-    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     // printf("PID %d needed %f\n", getpid(), time_spent);
     sprintf(tobewritten, "SM %f", time_spent);
     if ((write(myfd, tobewritten, sizeof(tobewritten))) == -1)

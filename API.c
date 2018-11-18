@@ -7,7 +7,7 @@
 #include <string.h>
 #include <errno.h>
 #include <signal.h>
-#include <time.h>
+#include <sys/time.h>
 #include "./HeaderFiles/Records.h"
 
 int SignalsReceived = 0;
@@ -62,7 +62,8 @@ void statistics(double leafs[], double SMs[], int leafnum, int smnum){
 int InputDirector(int argc, char *argv[])
 {
     // start timer
-    clock_t start = clock();
+    struct timeval t0,t1;
+    gettimeofday(&t0, NULL);
     // Decode prompt ./myfind –h Height –d Datafile -p Pattern -s
     int i = 1;
     int h = 1;
@@ -305,9 +306,10 @@ int InputDirector(int argc, char *argv[])
         printf("I am the parent process and I have received %d signals from my kids\n", SignalsReceived);
         // print statistics
         statistics(leaftimes, smtimes, leafnum, smnum);
-        clock_t end = clock();
-        double turnaround = (end - start) / (double)CLOCKS_PER_SEC;
-        printf("Turnaround time is %f\n", turnaround);
+        // turnaround time
+        gettimeofday(&t1, NULL);
+        double turnaround = (double) (t1.tv_usec - t0.tv_usec) / 1000000 + (double) (t1.tv_sec - t0.tv_sec);
+        printf("Turnaround time is %f seconds\n", turnaround);
 
         printf("-----------------STATISTICS END HERE----------------------\n");
        

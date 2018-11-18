@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <errno.h>
-#include <time.h>
+#include <sys/time.h>
 #include <signal.h>
 #include "./HeaderFiles/Records.h"
 
@@ -56,7 +56,8 @@ int main ( int argc , char * argv []) {
       	return 1;
    	}
     //place timer
-    clock_t begin = clock();
+    struct timeval t0, t1;
+    gettimeofday(&t0, NULL);
     // place cursor in the rangeBeg record
     fseek (fpb , (long)rangeBeg*sizeof(rec) , SEEK_SET);
     for (i=0; i<numOfrecords ; i++) {
@@ -90,15 +91,16 @@ int main ( int argc , char * argv []) {
     }
     fclose(fpb);
     // printf("I am leaf %d and I found %d records in my range\n",getpid(), sum);
-    clock_t end = clock();
+    gettimeofday(&t1, NULL);
+    double time_spent = (double) (t1.tv_usec - t0.tv_usec) / 1000000 + (double) (t1.tv_sec - t0.tv_sec);
     rec2.AM = -1;
     //
-    if (write(fd, &rec2, sizeof(rec2)) == -1){  // to specify that statistics are coming
+    if (write(fd, &rec2, sizeof(rec2)) == -1){  
+        // to specify that statistics are coming
         perror(" Error at Writing in pipe\n" ); 
         exit (2) ;
     }
     char tobewritten[25];
-    double time_spent = (double)(end - begin) / CLOCKS_PER_SEC;
     // printf("KIDDO PID %d needed ----------->%f\n",getpid(), time_spent);
     sprintf(tobewritten, "Searcher %f", time_spent );
     if ((write(fd, tobewritten, sizeof(tobewritten)) ) == -1){ 
