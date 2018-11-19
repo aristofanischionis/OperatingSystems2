@@ -115,6 +115,27 @@ void readWriteSMfifos(int fd, int myfd){
 
         }
 }
+
+int sumN(int h){
+    int res = 1;
+    int adder = 1;
+    int h = 5;
+    while(h){
+        adder = 2 * adder;
+        res = res + adder;
+        h--;
+    }
+    return res;
+}
+int calculateSkew(int RecordsSflag, int h, int i){
+    return (int)((RecordsSflag * i) / sumN(h));
+}
+
+int calculateSkewRangeBeg(int RecordsSflag, int h, int i){
+// this function will calclate how many records 
+//have already been read so that I know my range beg for skew case
+
+}
 void spawnKids(
     char *argv[],
     char *datafile,
@@ -124,30 +145,38 @@ void spawnKids(
     int h,
     int sflag,
     int myfd,
-    char *parentPid)
+    char *parentPid,
+    int RecordsSflag)
 {
     char *params[8];
-    int num1, num2;
+    int num1, num2, num3;
+    int fd1, fd2;
+    char KidResults1[30];
+    char KidResults2[30];
     params[0] = (char *)malloc(5);
-    strcpy(params[0], "./leaf");
     params[1] = (char *)malloc(strlen(datafile) + 1);
-    strcpy(params[1], datafile);
     params[2] = (char *)malloc(12);
     params[3] = (char *)malloc(12);
     params[4] = (char *)malloc(strlen(pattern) + 1);
-    strcpy(params[4], pattern);
     params[5] = (char *)malloc(30);
     params[6] = (char *)malloc(10);
+    strcpy(params[0], "./leaf");
+    strcpy(params[1], datafile);
+    //
+    //
+    strcpy(params[4], pattern);
+    //
     strcpy(params[6], parentPid);
     params[7] = NULL;
     num1 = numOfrecords / 2;
     num2 = numOfrecords - num1;
 
-    int fd1, fd2;
-    // to handle the case of odd numbersof records
-    //
-    char KidResults1[30];
-    char KidResults2[30];
+    if(sflag){
+        num1 = calculateSkew(RecordsSflag, h, rangeBeg);
+        num2 = calculateSkew(RecordsSflag, h, numOfrecords);
+        num3 = calculateSkewRangeBeg(RecordsSflag, h, rangeBeg);
+    }
+    
     // giving name to each fifo
     sprintf(KidResults1, "%s%d", "KidRes1_", getpid());
     sprintf(KidResults2, "%s%d", "KidRes2_", getpid());
@@ -183,9 +212,9 @@ void spawnKids(
                 }
                 else
                 {
-                    params[2] = strcpy(params[2], argv[2]);
-                    sprintf(params[3], "%d", num1);
+                    strcpy(params[2], argv[2]);
                 }
+                sprintf(params[3], "%d", num1);
                 strcpy(params[5], KidResults1);
                 // printf(" I am the child process %d ", getpid());
                 // printf(" and will be replaced with ’ leaf ’\n");
@@ -201,8 +230,8 @@ void spawnKids(
                 else
                 {
                     sprintf(params[2], "%d", rangeBeg + num1);
-                    sprintf(params[3], "%d", num2);
                 }
+                sprintf(params[3], "%d", num2);
                 strcpy(params[5], KidResults2);
                 // printf(" I am the child process %d ", getpid());
                 // printf(" and will be replaced with ’ leaf ’\n");
@@ -269,39 +298,47 @@ void spawnSMs(
     int h,
     int sflag,
     int myfd,
-    char *parentPid)
+    char *parentPid,
+    int RecordsSflag)
 {
-    char *paramsSM[argc];
+    int num = 9;
+    if(sflag) num = 11;
+    char *paramsSM[num];
     int num1, num2;
     int fd1, fd2;
+    char SMResults1[30];
+    char SMResults2[30];
     paramsSM[0] = (char *)malloc(5);
-    strcpy(paramsSM[0], "./splitterMerger");
     paramsSM[1] = (char *)malloc(strlen(datafile) + 1);
-    strcpy(paramsSM[1], datafile);
     paramsSM[2] = (char *)malloc(12);
     paramsSM[3] = (char *)malloc(12);
     paramsSM[4] = (char *)malloc(strlen(pattern) + 1);
-    strcpy(paramsSM[4], pattern);
     paramsSM[5] = (char *)malloc(12);
-    sprintf(paramsSM[5], "%d", h - 1);
     paramsSM[6] = (char *)malloc(30); // namedpipe for results
     paramsSM[7] = (char *)malloc(10);
+    strcpy(paramsSM[0], "./splitterMerger");
+    strcpy(paramsSM[1], datafile);
+    // assigned in each kid
+    // assigned in each kid
+    strcpy(paramsSM[4], pattern);
+    sprintf(paramsSM[5], "%d", h - 1);
+    // assigned in each kid
     strcpy(paramsSM[7], parentPid);
     if (sflag)
     {
         paramsSM[8] = (char *)malloc(3);
+        paramsSM[9] = (char *)malloc(12);
         strcpy(paramsSM[8], "-s");
-        paramsSM[9] = NULL;
+        sprintf(paramsSM[9], "%d", RecordsSflag);
+        paramsSM[10] = NULL;
     }
     else
         paramsSM[8] = NULL;
 
+    // to handle the case of odd numbersof records
     num1 = numOfrecords / 2;
     num2 = numOfrecords - num1;
-    // to handle the case of odd numbersof records
-
-    char SMResults1[30];
-    char SMResults2[30];
+    //we do the same even if we have -s flag
     // giving name to each fifo
     sprintf(SMResults1, "%s%d", "SMResults1_", getpid());
     sprintf(SMResults2, "%s%d", "SMResults2_", getpid());
@@ -317,7 +354,6 @@ void spawnSMs(
         perror(" Error creating the named pipe ");
         exit(1);
     }
-
     // placing the timer
     struct timeval t0,t1;
     gettimeofday(&t0, NULL);
@@ -331,15 +367,9 @@ void spawnSMs(
             // do childern stuff
             if (i == 0)
             { // child 1
-                if (sflag)
-                {
-                    //have to think about it
-                }
-                else
-                {
-                    paramsSM[2] = strcpy(paramsSM[2], argv[2]);
-                    sprintf(paramsSM[3], "%d", num1);
-                }
+
+                strcpy(paramsSM[2], argv[2]);
+                sprintf(paramsSM[3], "%d", num1);
                 strcpy(paramsSM[6], SMResults1);
                 // printf(" I am the child process %d ", getpid());
                 // printf(" and will be replaced with ’ splitterMerger ’\n");
@@ -348,15 +378,9 @@ void spawnSMs(
             }
             else
             { // child 2
-                if (sflag)
-                {
-                    //have to think about it
-                }
-                else
-                {
-                    sprintf(paramsSM[2], "%d", rangeBeg + num1);
-                    sprintf(paramsSM[3], "%d", num2);
-                }
+
+                sprintf(paramsSM[2], "%d", rangeBeg + num1);
+                sprintf(paramsSM[3], "%d", num2);
                 strcpy(paramsSM[6], SMResults2);
 
                 // printf(" I am the child process %d ", getpid());
@@ -425,20 +449,24 @@ int main(int argc, char *argv[])
     int sflag = 0;
     char *MyResults;
     char *parentPid;
+    int RecordsSflag= 0;
     if (argc < 8)
     {
-        printf("filename, rangeBeg, numOfrecords, Pattern, height, Results, parentPid \n");
+        printf("filename, rangeBeg, numOfrecords, Pattern, height, Results, parentPid, -s, RecordsSflag \n");
         exit(1);
     }
-    if (argc == 9)
+    if (argc == 11)
     {
         // -s flag is used
         sflag = 1;
+        RecordsSflag = atoi(argv[9]);
     }
     datafile = (char *)malloc(strlen(argv[1]) + 1);
     strcpy(datafile, argv[1]);
-    rangeBeg = atoi(argv[2]);
-    numOfrecords = atoi(argv[3]);
+    
+    rangeBeg = atoi(argv[2]); // if given sflag this is 1
+    numOfrecords = atoi(argv[3]); // if given sflag this is s^h
+
     pattern = (char *)malloc(strlen(argv[4]) + 1);
     strcpy(pattern, argv[4]);
     h = atoi(argv[5]);
@@ -455,10 +483,10 @@ int main(int argc, char *argv[])
     }
     if (h == 1)
     {
-        spawnKids(argv, datafile, rangeBeg, pattern, numOfrecords, h, sflag, myfd, parentPid);
+        spawnKids(argv, datafile, rangeBeg, pattern, numOfrecords, h, sflag, myfd, parentPid, RecordsSflag);
     }
     else
     {
-        spawnSMs(argc, argv, datafile, rangeBeg, pattern, numOfrecords, h, sflag, myfd, parentPid);
+        spawnSMs(argc, argv, datafile, rangeBeg, pattern, numOfrecords, h, sflag, myfd, parentPid, RecordsSflag);
     }
 }

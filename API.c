@@ -59,22 +59,39 @@ void statistics(double leafs[], double SMs[], int leafnum, int smnum){
     
 }
 
+int ReadDatafile(char *datafile){
+    MyRecord rec;
+    long lSize;
+    FILE *fpb;
+    int numOfrecords;
+    fpb = fopen(datafile, "rb");
+    if (fpb == NULL)
+    {
+        printf("Cannot open binary file\n");
+        return 1;
+    }
+    // check number of records
+    fseek(fpb, 0, SEEK_END);
+    lSize = ftell(fpb);
+    numOfrecords = (int)lSize / sizeof(rec);
+    fclose(fpb);
+    return numOfrecords;
+}
+
 int InputDirector(int argc, char *argv[])
 {
     // start timer
     struct timeval t0,t1;
     gettimeofday(&t0, NULL);
     // Decode prompt ./myfind –h Height –d Datafile -p Pattern -s
-    int i = 1;
-    int h = 1;
-    int sum = 0;
-    int sflag = 0;
+    int i = 1, h = 1, sum = 0, sflag = 0, numOfrecords;
+    int leafnum = 1,smnum, height, counteri = 0, counterj = 0, num = 9;
     char *datafile;
     char *pattern;
     pid_t pid;
-    MyRecord rec;
-    long lSize;
-    int numOfrecords;
+    
+    const char s[2] = " ";
+    char *token;
     while (i < argc)
     {
         if (strcmp(argv[i], "-h") == 0)
@@ -164,44 +181,9 @@ int InputDirector(int argc, char *argv[])
         }
         i++;
     }
-    //root node making the parameters for the SM
-    char *paramsSM[argc + 2];
-    paramsSM[0] = (char *)malloc(5);
-    strcpy(paramsSM[0], "./splitterMerger");
-    paramsSM[1] = (char *)malloc(strlen(datafile) + 1);
-    strcpy(paramsSM[1], datafile);
-    paramsSM[2] = (char *)malloc(2);
-    paramsSM[3] = (char *)malloc(12);
-    paramsSM[4] = (char *)malloc(strlen(pattern) + 1);
-    strcpy(paramsSM[4], pattern);
-    paramsSM[5] = (char *)malloc(12);
-    sprintf(paramsSM[5], "%d", h);
-    paramsSM[6] = (char *)malloc(20);
-    strcpy(paramsSM[6], "FinalResults");
-    // giving my pid to the leafs through the SMs in order to receive the signals
-    paramsSM[7] = (char *)malloc(10);
-    sprintf(paramsSM[7] , "%d", getpid()); 
-    // making the FinalResults fifo
-    if (mkfifo(paramsSM[6], 0666) == -1)
-    {
-        perror(" Error creating the named pipe ");
-        exit(1);
-    }
-    // check for the sflag
-    if (sflag)
-    {
-        paramsSM[8] = (char *)malloc(3);
-        strcpy(paramsSM[8], "-s");
-        paramsSM[9] = NULL;
-    }
-    else paramsSM[8] = NULL;
-    // setting the signal receiver
-    signal(SIGUSR2, handler);
     // preparing for statistics
     // h determines how many leafs and sm there will be
-    int leafnum = 1;
-    int smnum;
-    int height = h;
+    height = h;
     while(height)
     {
         height--;
@@ -210,9 +192,56 @@ int InputDirector(int argc, char *argv[])
     smnum = leafnum - 1;
     double leaftimes[leafnum];
     double smtimes[smnum];
-    int counteri = 0, counterj = 0;
-    const char s[2] = " ";
-    char *token;
+    
+    //root node making the parameters for the SM
+    if(sflag) num = 11;
+    char *paramsSM[num];
+    paramsSM[0] = (char *)malloc(20);
+    paramsSM[1] = (char *)malloc(strlen(datafile) + 1);
+    paramsSM[2] = (char *)malloc(2); // rangebeg
+    paramsSM[3] = (char *)malloc(12); // numof records
+    paramsSM[4] = (char *)malloc(strlen(pattern) + 1); // pattern
+    paramsSM[5] = (char *)malloc(12); // height
+    paramsSM[6] = (char *)malloc(20); // file for results
+    paramsSM[7] = (char *)malloc(12);
+    strcpy(paramsSM[0], "./splitterMerger"); // name of exec
+    strcpy(paramsSM[1], datafile); // datafile
+    //
+    //
+    strcpy(paramsSM[4], pattern);
+    sprintf(paramsSM[5], "%d", h);
+    strcpy(paramsSM[6], "FinalResults");
+    // giving my pid to the leafs through the SMs in order to receive the signals
+    sprintf(paramsSM[7], "%d", getpid());
+    // time for the binary file
+    numOfrecords = ReadDatafile(datafile);
+    // setting up 2,3 params
+    if (sflag)
+    {
+        paramsSM[8] = (char *)malloc(3);
+        paramsSM[9] = (char *)malloc(12);
+        strcpy(paramsSM[2], "1");
+        sprintf(paramsSM[3], "%d", leafnum);
+        strcpy(paramsSM[8], "-s");
+        sprintf(paramsSM[9], "%d", numOfrecords);
+        paramsSM[10] = NULL;
+    }
+    else
+    {
+        strcpy(paramsSM[2], "0");
+        sprintf(paramsSM[3], "%d", numOfrecords);
+        paramsSM[8] = NULL;
+    }
+    
+    // making the FinalResults fifo
+    if (mkfifo(paramsSM[6], 0666) == -1)
+    {
+        perror(" Error creating the named pipe ");
+        exit(1);
+    }
+    // setting the signal receiver
+    signal(SIGUSR2, handler);
+
     // forking the first SM
     if ((pid = fork()) == -1)
     {
@@ -221,12 +250,6 @@ int InputDirector(int argc, char *argv[])
     }
     if (pid != 0)
     { // parent
-        // printf(" I am the parent process % d\n", getpid());
-        // reading the final results
-        // pid_t wpid;
-        // int status =0;
-        // while((wpid = wait(&status)) > 0);
-        // printf("I am %d and now i'm gonna read from my pipe\n", getpid());
         int fd, nread = 0;
         if ((fd = open(paramsSM[6], O_RDONLY)) == -1)
         {
@@ -237,7 +260,6 @@ int InputDirector(int argc, char *argv[])
         final = fopen("ResultsNotSorted", "w");
         while ((nread = read(fd, &rec, sizeof(rec)) > 0))
         {
-
             if (rec.AM == -1)
             {
                 // printf("----------->I have to read statistics\n");
@@ -316,22 +338,6 @@ int InputDirector(int argc, char *argv[])
     }
     else
     { //child
-        paramsSM[2] = strcpy(paramsSM[2], "0");
-        FILE *fpb;
-        fpb = fopen(datafile, "rb");
-        if (fpb == NULL)
-        {
-            printf("Cannot open binary file\n");
-            return 1;
-        }
-        // check number of records
-        fseek(fpb, 0, SEEK_END);
-        lSize = ftell(fpb);
-        numOfrecords = (int)lSize / sizeof(rec);
-
-        paramsSM[2] = strcpy(paramsSM[2], "0");
-        sprintf(paramsSM[3], "%d", numOfrecords);
-        fclose(fpb);
         // printf(" I am the child process %d ", getpid());
         // printf(" and will be replaced with ’ splitterMerger ’\n");
         execvp("./splitterMerger", paramsSM);
