@@ -89,7 +89,7 @@ int InputDirector(int argc, char *argv[])
     char *datafile;
     char *pattern;
     pid_t pid;
-    
+    MyRecord rec;
     const char s[2] = " ";
     char *token;
     while (i < argc)

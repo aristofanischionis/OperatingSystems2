@@ -12,7 +12,7 @@
 
 int findSubstring(char *tobechecked, char *pattern){
     if(strstr(tobechecked, pattern)){
-        printf("My pid is %d and I found the record: %s\n", getpid(), tobechecked);
+        // printf("My pid is %d and I found the record: %s\n", getpid(), tobechecked);
         return 1;
     }
     else return 0;
