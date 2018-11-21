@@ -90,7 +90,7 @@ int main ( int argc , char * argv []) {
         }
     }
     fclose(fpb);
-    printf("I am leaf %d and I found %d records in my range\n",getpid(), sum);
+    // printf("I am leaf %d and I found %d records in my range\n",getpid(), sum);
     gettimeofday(&t1, NULL);
     double time_spent = (double) (t1.tv_usec - t0.tv_usec) / 1000000 + (double) (t1.tv_sec - t0.tv_sec);
     rec2.AM = -1;

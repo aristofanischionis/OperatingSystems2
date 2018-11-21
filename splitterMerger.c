@@ -7,6 +7,7 @@
 #include <string.h>
 #include <errno.h>
 #include <sys/time.h>
+#include <math.h>
 #include "./HeaderFiles/Records.h"
 
 void writeFakeRecord(int myfd)
@@ -117,31 +118,46 @@ void readWriteSMfifos(int fd, int myfd){
 }
 
 int sumN(int h){
-    int res = 1;
+    float res =1;
     int adder = 1;
-    while(h){
-        adder = 2 * adder;
-        res = res + adder;
-        h--;
+    for(float i =0;i< pow(2,h)-1; i++){
+        adder++;
+        res += adder;
     }
-    return res;
+    return (int)res;
 }
 int calculateSkew(int RecordsSflag, int h, int i){
-    return (int)((RecordsSflag * i) / sumN(h));
+    int res = 0;
+    res = ((RecordsSflag * i) / sumN(h));
+    return res;
 }
 
 int calculateSkewRangeBeg(int RecordsSflag, int h, int i){
-    // this function will calclate how many records 
+    // this function will calculate how many records 
     //have already been read so that I know my range beg for skew case
     int sum = 0;
-    i--;
     while(i){
         sum += calculateSkew(RecordsSflag, h, i);
         i--;
     }
-    printf("calculateSkewRangeBeg ,i = %d, sum + 1 = %d\n",i, sum +1);
     return sum;
 }
+
+int ExtraRecs(int RecordsSflag, int h, int i){
+    int height = h;
+    int leafnum = 1;
+    while(height)
+    {
+        height--;
+        leafnum = 2 * leafnum;
+    }
+    if(i != leafnum) return 0;
+    printf("this is the last kid\n");
+    int recordstillnow = calculateSkewRangeBeg(RecordsSflag, h, i);
+    int recsleft = RecordsSflag - recordstillnow;
+    return recsleft;
+}
+
 void spawnKids(
     char *argv[],
     char *datafile,
@@ -149,6 +165,7 @@ void spawnKids(
     char *pattern,
     int numOfrecords,
     int h,
+    char* initialHeight,
     int sflag,
     int myfd,
     char *parentPid,
@@ -174,14 +191,20 @@ void spawnKids(
     //
     strcpy(params[6], parentPid);
     params[7] = NULL;
+
     num1 = numOfrecords / 2;
     num2 = numOfrecords - num1;
-    printf("sflag is %d", sflag);
+    int height = atoi(initialHeight);
+    int i,j;
     if(sflag){
-        num1 = calculateSkew(RecordsSflag, h, rangeBeg); // records child 1 has to read
-        num2 = calculateSkew(RecordsSflag, h, numOfrecords); // records child 2 has to read
-        num3 = calculateSkewRangeBeg(RecordsSflag, h, rangeBeg); // beggining of child 1
-        printf("num 3 -------> %d\n", num3);
+        i = rangeBeg; // 1 // 1 // 1
+        j = i + numOfrecords - 1; //8 // 4 // 2
+        // printf("i ==== %d, j ===== %d\n", i,j);
+        num1 = calculateSkew(RecordsSflag, height, i); // records child 1 has to read
+        num2 = calculateSkew(RecordsSflag, height, j); // records child 2 has to read
+        // printf("num 1 -------> %d, num 2 ==========%d \n", num1, num2);
+        num3 = calculateSkewRangeBeg(RecordsSflag, height, i -1); // beggining of child 1
+        // printf("num 3 -------> %d\n", num3);
     }
     
     // giving name to each fifo
@@ -225,7 +248,6 @@ void spawnKids(
                     sprintf(params[3], "%d", num1);
                 }
                 strcpy(params[5], KidResults1);
-                // printf("oooooooooooobeg %s,end  %s",params[2], params[3] );
                 // printf(" I am the child process %d ", getpid());
                 // printf(" and will be replaced with ’ leaf ’\n");
                 execvp("./leaf", params);
@@ -237,7 +259,7 @@ void spawnKids(
                 {
                     //have to think about it
                     sprintf(params[2], "%d", num3 + num1);
-                    sprintf(params[3], "%d", num2);
+                    sprintf(params[3], "%d", num2 + ExtraRecs(RecordsSflag, height, j));
                 }
                 else
                 {
@@ -245,7 +267,6 @@ void spawnKids(
                     sprintf(params[3], "%d", num2);
                 }
                 strcpy(params[5], KidResults2);
-                // printf("ooooooooooooooobeg %s,end  %s",params[2], params[3] );
                 // printf(" I am the child process %d ", getpid());
                 // printf(" and will be replaced with ’ leaf ’\n");
                 execvp("./leaf", params);
@@ -309,13 +330,14 @@ void spawnSMs(
     char *pattern,
     int numOfrecords,
     int h,
+    char* initialHeight,
     int sflag,
     int myfd,
     char *parentPid,
     int RecordsSflag)
 {
-    int num = 9;
-    if(sflag) num = 11;
+    int num = 10;
+    if(sflag) num = 12;
     char *paramsSM[num];
     int num1, num2;
     int fd1, fd2;
@@ -327,26 +349,28 @@ void spawnSMs(
     paramsSM[3] = (char *)malloc(12);
     paramsSM[4] = (char *)malloc(strlen(pattern) + 1);
     paramsSM[5] = (char *)malloc(12);
-    paramsSM[6] = (char *)malloc(30); // namedpipe for results
-    paramsSM[7] = (char *)malloc(10);
+    paramsSM[6] = (char *)malloc(12); // initial height
+    paramsSM[7] = (char *)malloc(30); // namedpipe for results
+    paramsSM[8] = (char *)malloc(10);
     strcpy(paramsSM[0], "./splitterMerger");
     strcpy(paramsSM[1], datafile);
     // assigned in each kid
     // assigned in each kid
     strcpy(paramsSM[4], pattern);
     sprintf(paramsSM[5], "%d", h - 1);
+    strcpy(paramsSM[6], initialHeight);
     // assigned in each kid
-    strcpy(paramsSM[7], parentPid);
+    strcpy(paramsSM[8], parentPid);
     if (sflag)
     {
-        paramsSM[8] = (char *)malloc(3);
-        paramsSM[9] = (char *)malloc(12);
-        strcpy(paramsSM[8], "-s");
-        sprintf(paramsSM[9], "%d", RecordsSflag);
-        paramsSM[10] = NULL;
+        paramsSM[9] = (char *)malloc(3);
+        paramsSM[10] = (char *)malloc(12);
+        strcpy(paramsSM[9], "-s");
+        sprintf(paramsSM[10], "%d", RecordsSflag);
+        paramsSM[11] = NULL;
     }
     else
-        paramsSM[8] = NULL;
+        paramsSM[9] = NULL;
 
     // to handle the case of odd numbersof records
     num1 = numOfrecords / 2;
@@ -380,10 +404,15 @@ void spawnSMs(
             // do childern stuff
             if (i == 0)
             { // child 1
-
-                strcpy(paramsSM[2], argv[2]);
-                sprintf(paramsSM[3], "%d", num1);
-                strcpy(paramsSM[6], SMResults1);
+                // if(sflag){
+                //     sprintf(paramsSM[2], "%d", rangeBeg);
+                //     sprintf(paramsSM[3], "%d", num1);
+                // }
+                // else{
+                    strcpy(paramsSM[2], argv[2]);
+                    sprintf(paramsSM[3], "%d", num1);
+                // }
+                strcpy(paramsSM[7], SMResults1);
                 // printf(" I am the child process %d ", getpid());
                 // printf(" and will be replaced with ’ splitterMerger ’\n");
                 execvp("./splitterMerger", paramsSM);
@@ -391,10 +420,15 @@ void spawnSMs(
             }
             else
             { // child 2
-
-                sprintf(paramsSM[2], "%d", rangeBeg + num1);
-                sprintf(paramsSM[3], "%d", num2);
-                strcpy(paramsSM[6], SMResults2);
+                // if(sflag){
+                //     sprintf(paramsSM[2], "%d", num1 +1);
+                //     sprintf(paramsSM[3], "%d", numOfrecords);
+                // }
+                // else{
+                    sprintf(paramsSM[2], "%d", rangeBeg + num1);
+                    sprintf(paramsSM[3], "%d", num2);
+                // }
+                strcpy(paramsSM[7], SMResults2);
 
                 // printf(" I am the child process %d ", getpid());
                 // printf(" and will be replaced with ’ splitterMerger ’\n");
@@ -463,30 +497,32 @@ int main(int argc, char *argv[])
     char *MyResults;
     char *parentPid;
     int RecordsSflag= 0;
-    if (argc < 8)
+    char* initialHeight;
+    if (argc < 9)
     {
-        printf("filename, rangeBeg, numOfrecords, Pattern, height, Results, parentPid, -s, RecordsSflag \n");
+        printf("filename, rangeBeg, numOfrecords, Pattern, height, initialHeight, Results, parentPid, -s, RecordsSflag \n");
         exit(1);
     }
-    if (argc == 10)
+    if (argc == 11)
     {
         // -s flag is used
         sflag = 1;
-        RecordsSflag = atoi(argv[9]);
+        RecordsSflag = atoi(argv[10]);
     }
     datafile = (char *)malloc(strlen(argv[1]) + 1);
     strcpy(datafile, argv[1]);
     
     rangeBeg = atoi(argv[2]); // if given sflag this is 1
     numOfrecords = atoi(argv[3]); // if given sflag this is s^h
-
     pattern = (char *)malloc(strlen(argv[4]) + 1);
     strcpy(pattern, argv[4]);
     h = atoi(argv[5]);
-    MyResults = (char *)malloc(strlen(argv[6]) + 1);
-    strcpy(MyResults, argv[6]);
+    initialHeight = (char *)malloc(strlen(argv[6]) + 1);
+    strcpy(initialHeight, argv[6]);
+    MyResults = (char *)malloc(strlen(argv[7]) + 1);
+    strcpy(MyResults, argv[7]);
     parentPid = (char *)malloc(10);
-    strcpy(parentPid, argv[7]);
+    strcpy(parentPid, argv[8]);
     //
     int myfd;
     if ((myfd = open(MyResults, O_WRONLY)) == -1)
@@ -496,10 +532,10 @@ int main(int argc, char *argv[])
     }
     if (h == 1)
     {
-        spawnKids(argv, datafile, rangeBeg, pattern, numOfrecords, h, sflag, myfd, parentPid, RecordsSflag);
+        spawnKids(argv, datafile, rangeBeg, pattern, numOfrecords, h, initialHeight, sflag, myfd, parentPid, RecordsSflag);
     }
     else
     {
-        spawnSMs(argc, argv, datafile, rangeBeg, pattern, numOfrecords, h, sflag, myfd, parentPid, RecordsSflag);
+        spawnSMs(argc, argv, datafile, rangeBeg, pattern, numOfrecords, h, initialHeight, sflag, myfd, parentPid, RecordsSflag);
     }
 }

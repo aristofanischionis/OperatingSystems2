@@ -19,7 +19,7 @@ leaf : leaf.o
 	$(CC) -Wall -o leaf leaf.c
 
 splitterMerger : splitterMerger.o
-	$(CC) -Wall -o splitterMerger splitterMerger.c
+	$(CC) -Wall -o splitterMerger splitterMerger.c -lm
 
 # create/compile the individual files >>separately<< 
 
